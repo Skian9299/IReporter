@@ -1,0 +1,155 @@
+/* Main container */
+.admin-login-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 100vh;
+    padding: 0 10%;
+    background: #f5f5f5;
+}
+
+/* Left Side - Form */
+.admin-login-form {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 380px;
+}
+
+/* Titles */
+.admin-title {
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.admin-subtitle {
+    font-size: 20px;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* Input Fields */
+.input-group input,
+.password-field input {
+    width: 100%;
+    padding: 14px;
+    margin-bottom: 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 15px;
+    transition: border 0.3s ease;
+}
+
+.input-group input:focus,
+.password-field input:focus {
+    border-color: #3f51b5;
+    outline: none;
+}
+
+/* Password Toggle */
+.password-field {
+    position: relative;
+}
+
+.password-field .toggle-password {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    font-size: 20px;
+    color: #555;
+}
+
+/* Login Button */
+.admin-login-btn {
+    background: #3f51b5;
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 17px;
+    font-weight: bold;
+    transition: background 0.3s ease;
+    width: 100%;
+}
+
+.admin-login-btn:hover {
+    background: #303f9f;
+}
+
+/* Error Message */
+.error-text {
+    color: red;
+    font-size: 14px;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+/* Forgot Password */
+.admin-forgot-password {
+    text-align: center;
+    margin-top: 10px;
+    color: #3f51b5;
+    cursor: pointer;
+}
+
+.admin-forgot-password:hover {
+    text-decoration: underline;
+}
+
+/* Right Side - Info Section */
+.admin-login-info {
+    max-width: 450px;
+    text-align: center;
+}
+
+.admin-login-info h2 {
+    font-size: 34px;
+    font-weight: bold;
+    line-height: 1.3;
+    color: #333;
+}
+
+.admin-login-info .bold-text {
+    font-weight: 900;
+    color: #222;
+}
+
+.admin-login-info p {
+    font-size: 17px;
+    color: #444;
+    margin-top: 10px;
+}
+
+.admin-login-info .highlight {
+    color: #3f51b5;
+    font-weight: bold;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .admin-login-container {
+        flex-direction: column;
+        padding: 20px;
+        height: auto;
+    }
+
+    .admin-login-form {
+        max-width: 100%;
+    }
+
+    .admin-login-info {
+        max-width: 100%;
+        margin-top: 20px;
+    }
+
+    .admin-login-info h2 {
+        font-size: 28px;
+    }
+}
