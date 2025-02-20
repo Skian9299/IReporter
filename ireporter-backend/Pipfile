@@ -9,6 +9,12 @@ flask-restful = "*"
 flask-cors = "*"
 flask-sqlalchemy = "*"
 python-dotenv = "*"
+flask-migrate = "*"
+flask-bcrypt = "*"
+flask-login = "*"
+flask-marshmallow = "*"
+marshmallow = "*"
+serializers = "*"
 
 [dev-packages]
 
