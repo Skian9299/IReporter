@@ -1,0 +1,94 @@
+.dashboard-container {
+    padding: 20px;
+    font-family: Arial, sans-serif;
+  }
+  
+  .dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #3f51b5;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+  }
+  
+  .user-info {
+    display: flex;
+    align-items: center;
+  }
+  
+  .profile-pic {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 10px;
+  }
+  
+  .username {
+    font-weight: bold;
+  }
+  
+  .dashboard-buttons button {
+    margin: 0 5px;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  
+  .add-report {
+    background: green;
+    color: white;
+  }
+  
+  .all-reports {
+    background: orange;
+    color: white;
+  }
+  
+  .logout {
+    background: red;
+    color: white;
+  }
+  
+  .report-sections {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+  }
+  
+  .report-box {
+    width: 48%;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  }
+  
+  .red-flag {
+    background: #ff4c4c;
+    color: white;
+  }
+  
+  .intervention {
+    background: #ff9800;
+    color: white;
+  }
+  
+  .report-box input {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+  
+  .report-btn {
+    width: 100%;
+    padding: 10px;
+    background: #333;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  
