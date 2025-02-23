@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./Login.css";
@@ -8,24 +8,46 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    return () => {
+      setLoading(false); // Prevent state updates after unmount
+    };
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
     try {
-      const response = await axios.post("https://your-backend-url.com/api/login", {
-        email,
-        password,
-      });
+      const response = await axios.post("http://127.0.0.1:5000/login", { email, password });
 
       if (response.status === 200) {
-        localStorage.setItem("token", response.data.token);
-        navigate("/dashboard"); // Redirect to dashboard after successful login
+        const { token, role, user } = response.data;
+
+        if (!token) {
+          setError("Login failed: No token received.");
+          return;
+        }
+
+        // Store user info in localStorage
+        localStorage.setItem("token", token);
+        localStorage.setItem("role", role);
+        localStorage.setItem("user", JSON.stringify(user));
+
+        console.log("User logged in:", user);
+
+        // Redirect based on role
+        navigate(role === "admin" ? "/admin-dashboard" : "/dashboard");
       }
     } catch (err) {
-      setError("Invalid email or password. Please try again.");
+      console.error("Login error:", err);
+      setError(err.response?.data?.error || "Invalid email or password. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -53,21 +75,20 @@ const Login = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
-            <span
-              className="toggle-password"
-              onClick={() => setShowPassword(!showPassword)}
-            >
+            <span className="toggle-password" onClick={() => setShowPassword(!showPassword)} role="button">
               {showPassword ? "👁️" : "🙈"}
             </span>
           </div>
 
           {error && <p className="error-text">{error}</p>}
 
-          <button type="submit" className="login-btn">Login</button>
+          <button type="submit" className="login-btn" disabled={loading}>
+            {loading ? "Logging in..." : "Login"}
+          </button>
         </form>
 
         <p className="forgot-password">
-          <Link to="/forgot-password">Forgot Password</Link>
+          <Link to="/forgot-password">Forgot Password?</Link>
         </p>
 
         <p className="or-text">OR</p>
