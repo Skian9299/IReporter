@@ -1,12 +1,10 @@
 from flask import Flask, jsonify
-from flask_sqlalchemy import SQLAlchemy
-from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from flask_migrate import Migrate
 from config import Config
-from database import db, bcrypt
-from models import User, Report  # ✅ Import models before running migrations
+from database import db, bcrypt  # Import db and bcrypt correctly
+from models import User, RedFlag, Intervention
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -19,13 +17,13 @@ CORS(app)
 db.init_app(app)
 bcrypt.init_app(app)
 jwt = JWTManager(app)
-migrate = Migrate(app, db)  # ✅ Make sure Migrate is initialized properly
+migrate = Migrate(app, db)
 
 # Import and register routes
 from routes import auth_routes, report_routes, admin_routes
-app.register_blueprint(auth_routes, url_prefix="/api")
-app.register_blueprint(report_routes, url_prefix="/api")
-app.register_blueprint(admin_routes, url_prefix="/api")
+app.register_blueprint(auth_routes, url_prefix="/api/auth")
+app.register_blueprint(report_routes, url_prefix="/api/reports")
+app.register_blueprint(admin_routes, url_prefix="/api/admin")
 
 # Home route
 @app.route("/")
