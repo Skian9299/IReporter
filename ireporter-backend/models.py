@@ -21,12 +21,7 @@ class Status(Enum):
 class SerializerMixin:
     """Mixin for serializing SQLAlchemy models to dictionaries and JSON."""
     def serialize(self, exclude=None):
-        """
-        Serialize the model to a dictionary.
-        
-        :param exclude: List of column names to exclude from serialization.
-        :return: Dictionary representation of the model.
-        """
+        """Serialize the model to a dictionary."""
         if exclude is None:
             exclude = []
         return {
@@ -36,12 +31,7 @@ class SerializerMixin:
         }
 
     def serialize_json(self, exclude=None):
-        """
-        Serialize the model to a JSON string.
-        
-        :param exclude: List of column names to exclude from serialization.
-        :return: JSON string representation of the model.
-        """
+        """Serialize the model to a JSON string."""
         return json.dumps(self.serialize(exclude=exclude))
 
 # User Model
@@ -83,7 +73,8 @@ class RedFlag(db.Model, SerializerMixin):
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=False)
     location = db.Column(db.String(255), nullable=False)
-    status = db.Column(db.Enum(Status), default=Status.DRAFT, nullable=False)
+    status = db.Column(db.Enum(Status), default=Status.DRAFT.name, nullable=False)
+    image_url = db.Column(db.String(255), nullable=True)  # ✅ Added image_url field
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -100,7 +91,8 @@ class Intervention(db.Model, SerializerMixin):
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=False)
     location = db.Column(db.String(255), nullable=False)
-    status = db.Column(db.Enum(Status), default=Status.DRAFT, nullable=False)
+    status = db.Column(db.Enum(Status), default=Status.DRAFT.name, nullable=False)
+    image_url = db.Column(db.String(255), nullable=True)  # ✅ Added image_url field
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -119,8 +111,8 @@ class Media(db.Model, SerializerMixin):
     redflag_id = db.Column(db.Integer, db.ForeignKey('red_flags.id'), nullable=True)
     intervention_id = db.Column(db.Integer, db.ForeignKey('interventions.id'), nullable=True)
 
-    # Validation to ensure media belongs to either a red flag or an intervention
     def __init__(self, **kwargs):
+        """Ensure media belongs to either a RedFlag or an Intervention."""
         super().__init__(**kwargs)
         if not self.redflag_id and not self.intervention_id:
             raise ValueError("Media must belong to either a RedFlag or an Intervention.")
