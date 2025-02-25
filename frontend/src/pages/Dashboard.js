@@ -7,7 +7,11 @@ const Dashboard = () => {
   const [username, setUsername] = useState("User");
   const [profileImage, setProfileImage] = useState(localStorage.getItem("profileImage") || null);
   const [location, setLocation] = useState(localStorage.getItem("location") || "");
+  const [redFlagTitle, setRedFlagTitle] = useState("");
+  const [redFlagDescription, setRedFlagDescription] = useState("");
   const [redFlagImage, setRedFlagImage] = useState(null);
+  const [interventionTitle, setInterventionTitle] = useState("");
+  const [interventionDescription, setInterventionDescription] = useState("");
   const [interventionImage, setInterventionImage] = useState(null);
 
   useEffect(() => {
@@ -25,28 +29,25 @@ const Dashboard = () => {
   const handleImageUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
-      const imageURL = URL.createObjectURL(file);
-      setProfileImage(imageURL);
-      localStorage.setItem("profileImage", imageURL);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileImage(reader.result);
+        localStorage.setItem("profileImage", reader.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  // Handle Red Flag & Intervention Image Upload
+  // Handle Report Image Upload
   const handleReportImageUpload = (event, type) => {
     const file = event.target.files[0];
     if (file) {
-      const imageURL = URL.createObjectURL(file);
       if (type === "redFlag") {
-        setRedFlagImage(imageURL);
+        setRedFlagImage(file);
       } else if (type === "intervention") {
-        setInterventionImage(imageURL);
+        setInterventionImage(file);
       }
     }
-  };
-
-  // Open File Input for Profile
-  const openProfileImageInput = () => {
-    document.getElementById("profileImageUpload").click();
   };
 
   // Handle Location Input
@@ -55,6 +56,84 @@ const Dashboard = () => {
     if (userLocation) {
       setLocation(userLocation);
       localStorage.setItem("location", userLocation);
+    }
+  };
+
+  // Submit Red Flag Report
+  const submitRedFlag = async () => {
+    if (!redFlagTitle || !redFlagDescription) {
+      alert("Please fill in all fields for the red flag report.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("title", redFlagTitle);
+    formData.append("description", redFlagDescription);
+    formData.append("location", location);
+    if (redFlagImage) {
+      formData.append("image", redFlagImage);
+    }
+
+    try {
+      const response = await fetch("http://localhost:5000/redflags", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        alert("Red flag report submitted successfully!");
+        setRedFlagTitle("");
+        setRedFlagDescription("");
+        setRedFlagImage(null);
+      } else {
+        alert(data.error || "Failed to submit red flag report.");
+      }
+    } catch (error) {
+      console.error("Error submitting red flag:", error);
+      alert("An error occurred while submitting the red flag.");
+    }
+  };
+
+  // Submit Intervention Report
+  const submitIntervention = async () => {
+    if (!interventionTitle || !interventionDescription) {
+      alert("Please fill in all fields for the intervention report.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("title", interventionTitle);
+    formData.append("description", interventionDescription);
+    formData.append("location", location);
+    if (interventionImage) {
+      formData.append("image", interventionImage);
+    }
+
+    try {
+      const response = await fetch("http://localhost:5000/interventions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        alert("Intervention report submitted successfully!");
+        setInterventionTitle("");
+        setInterventionDescription("");
+        setInterventionImage(null);
+      } else {
+        alert(data.error || "Failed to submit intervention report.");
+      }
+    } catch (error) {
+      console.error("Error submitting intervention:", error);
+      alert("An error occurred while submitting the intervention.");
     }
   };
 
@@ -68,24 +147,13 @@ const Dashboard = () => {
     <div className="dashboard-container">
       {/* HEADER SECTION */}
       <div className="dashboard-header">
-        <div className="user-info" onClick={openProfileImageInput}>
-          <input
-            type="file"
-            id="profileImageUpload"
-            accept="image/*"
-            hidden
-            onChange={handleImageUpload}
-          />
-          <img
-            src={profileImage || "default-avatar.png"}
-            alt="Profile"
-            className="profile-pic"
-          />
+        <div className="user-info" onClick={() => document.getElementById("profileImageUpload").click()}>
+          <input type="file" id="profileImageUpload" accept="image/*" hidden onChange={handleImageUpload} />
+          <img src={profileImage || "default-avatar.png"} alt="Profile" className="profile-pic" />
           <span className="username">{username}</span>
         </div>
 
         <div className="dashboard-buttons">
-          <button className="add-report">Add Report</button>
           <button className="all-reports" onClick={() => navigate("/reports")}>
             All Reports
           </button>
@@ -100,59 +168,33 @@ const Dashboard = () => {
         {/* RED FLAG REPORT */}
         <div className="report-box red-flag">
           <h3>Red Flag</h3>
-          <input type="text" placeholder="Edit Title" className="title-input" />
-          <textarea placeholder="Report any form of corruption..." className="report-textarea"></textarea>
-          
-          <div className="report-actions">
-            <input
-              type="file"
-              id="redFlagImageUpload"
-              accept="image/*"
-              hidden
-              onChange={(e) => handleReportImageUpload(e, "redFlag")}
-            />
+          <input type="text" placeholder="Title" value={redFlagTitle} onChange={(e) => setRedFlagTitle(e.target.value)} />
+          <textarea placeholder="Report corruption..." value={redFlagDescription} onChange={(e) => setRedFlagDescription(e.target.value)} />
 
-            <button onClick={() => document.getElementById("redFlagImageUpload").click()} className="action-btn">
-              📷 Upload
-            </button>
-            <button onClick={handleLocationInput} className="action-btn">
-              📍 Location
-            </button>
+          <div className="report-actions">
+            <input type="file" id="redFlagImageUpload" accept="image/*" hidden onChange={(e) => handleReportImageUpload(e, "redFlag")} />
+            <button onClick={() => document.getElementById("redFlagImageUpload").click()}>📷 Upload</button>
+            <button onClick={handleLocationInput}>📍 Location</button>
           </div>
 
-          {/* Image Preview */}
-          {redFlagImage && <img src={redFlagImage} alt="Red Flag" className="report-image" />}
-
-          <button className="report-btn">Submit Report</button>
+          {redFlagImage && <img src={URL.createObjectURL(redFlagImage)} alt="Red Flag" className="report-image" />}
+          <button className="report-btn" onClick={submitRedFlag}>Submit Report</button>
         </div>
 
         {/* INTERVENTION REPORT */}
         <div className="report-box intervention">
           <h3>Intervention</h3>
-          <input type="text" placeholder="Edit Title" className="title-input" />
-          <textarea placeholder="Report on things that need government intervention..." className="report-textarea"></textarea>
-          
-          <div className="report-actions">
-            <input
-              type="file"
-              id="interventionImageUpload"
-              accept="image/*"
-              hidden
-              onChange={(e) => handleReportImageUpload(e, "intervention")}
-            />
+          <input type="text" placeholder="Title" value={interventionTitle} onChange={(e) => setInterventionTitle(e.target.value)} />
+          <textarea placeholder="Report an issue needing government intervention..." value={interventionDescription} onChange={(e) => setInterventionDescription(e.target.value)} />
 
-            <button onClick={() => document.getElementById("interventionImageUpload").click()} className="action-btn">
-              📷 Upload
-            </button>
-            <button onClick={handleLocationInput} className="action-btn">
-              📍 Location
-            </button>
+          <div className="report-actions">
+            <input type="file" id="interventionImageUpload" accept="image/*" hidden onChange={(e) => handleReportImageUpload(e, "intervention")} />
+            <button onClick={() => document.getElementById("interventionImageUpload").click()}>📷 Upload</button>
+            <button onClick={handleLocationInput}>📍 Location</button>
           </div>
 
-          {/* Image Preview */}
-          {interventionImage && <img src={interventionImage} alt="Intervention" className="report-image" />}
-
-          <button className="report-btn">Submit Report</button>
+          {interventionImage && <img src={URL.createObjectURL(interventionImage)} alt="Intervention" className="report-image" />}
+          <button className="report-btn" onClick={submitIntervention}>Submit Report</button>
         </div>
       </div>
     </div>
@@ -160,5 +202,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
-
