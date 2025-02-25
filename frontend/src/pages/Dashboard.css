@@ -1,0 +1,234 @@
+/* Dashboard Container */
+.dashboard-container {
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  margin-top: 80px; /* Push content below the navbar */
+}
+
+/* Header Section */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #3f51b5;
+  color: white;
+  padding: 15px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+}
+
+/* User Info */
+.user-info {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.profile-pic {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  margin-right: 12px;
+  border: 2px solid white;
+  object-fit: cover;
+}
+
+/* Hide default file input */
+input[type="file"] {
+  display: none;
+}
+
+/* Username */
+.username {
+  font-weight: bold;
+  font-size: 16px;
+}
+
+/* Dashboard Buttons */
+.dashboard-buttons button {
+  margin: 0 8px;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease-in-out;
+}
+
+.add-report {
+  background: green;
+  color: white;
+}
+
+.all-reports {
+  background: orange;
+  color: white;
+}
+
+.logout {
+  background: red;
+  color: white;
+}
+
+/* Button Hover Effects */
+.dashboard-buttons button:hover {
+  opacity: 0.8;
+}
+
+.dashboard-buttons button:active {
+  transform: scale(0.95);
+}
+
+/* Reports Section */
+.report-sections {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+/* Report Boxes */
+.report-box {
+  flex: 1;
+  min-width: 45%;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease-in-out;
+}
+
+.report-box:hover {
+  transform: translateY(-5px);
+}
+
+.red-flag {
+  background: #ff4c4c;
+  color: white;
+}
+
+.intervention {
+  background: #ff9800;
+  color: white;
+}
+
+/* Report Inputs */
+.report-box input,
+.report-box textarea {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  border-radius: 6px;
+  border: none;
+  font-size: 14px;
+  background: white;
+}
+
+/* Increase textarea height and disable resizing */
+.report-box textarea {
+  min-height: 150px;
+  resize: none;
+}
+
+/* Report Actions */
+.report-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+/* Report Upload & Location Buttons */
+.action-btn {
+  background: #333;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.3s ease-in-out;
+}
+
+.action-btn:hover {
+  background: #555;
+}
+
+/* Report Image Preview */
+.report-image {
+  width: 100%; /* Fit inside the report box */
+  max-width: 300px; /* Prevents oversized images */
+  max-height: 180px; /* Keeps image height controlled */
+  object-fit: cover; /* Ensures the image looks good */
+  border-radius: 6px;
+  margin-top: 10px;
+  border: 2px solid white;
+  display: block;
+}
+
+/* Report Submit Button */
+.report-btn {
+  width: 100%;
+  padding: 12px;
+  background: #222;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  transition: all 0.3s ease-in-out;
+}
+
+.report-btn:hover {
+  background: #444;
+}
+
+/* RESPONSIVE DESIGN */
+
+/* Tablet View */
+@media (max-width: 1024px) {
+  .report-sections {
+    flex-direction: column; /* Stack on smaller screens */
+    align-items: center;
+  }
+
+  .report-box {
+    width: 100%;
+  }
+}
+
+/* Mobile View */
+@media (max-width: 768px) {
+  .dashboard-header {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .dashboard-buttons {
+    margin-top: 10px;
+  }
+
+  .report-sections {
+    flex-direction: column;
+  }
+
+  .report-box {
+    width: 100%;
+  }
+
+  .report-image {
+    width: 100%;
+    max-width: 250px;
+    max-height: 160px;
+  }
+}
