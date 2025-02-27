@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import "./AllReports.css"; // Ensure you have styling for a clean UI
+import "./AllReports.css"; 
 
 const AllReports = () => {
   const navigate = useNavigate();
@@ -21,10 +21,9 @@ const AllReports = () => {
 
   const fetchUserReports = async (token) => {
     try {
-      const response = await fetch("http://localhost:5000/api/reports", {
+      const response = await fetch("http://localhost:5000/reports", {
         method: "GET",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
       });
@@ -49,10 +48,9 @@ const AllReports = () => {
     if (!confirmDelete) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/reports/${reportId}`, {
+      const response = await fetch(`http://localhost:5000/reports/${reportId}`, {
         method: "DELETE",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
@@ -84,6 +82,9 @@ const AllReports = () => {
 
         <div className="dashboard-buttons">
           <button className="add-report" onClick={() => navigate("/dashboard")}>Add report</button>
+          <button className="all-reports" onClick={() => navigate("/reports")}>
+            All Reports
+          </button>
           <button className="logout" onClick={handleLogout}>Log Out</button>
         </div>
       </div>

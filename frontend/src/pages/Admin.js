@@ -101,7 +101,7 @@ const AdminLogin = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post("http://127.0.0.1:5000/admin/login", {
+      const response = await axios.post("http://127.0.0.1:5000/api/admin/login", {
         email,
         password,
       });
@@ -109,7 +109,7 @@ const AdminLogin = () => {
       if (response.status === 200) {
         localStorage.setItem("adminToken", response.data.token);
         localStorage.setItem("role", "admin"); // Store admin role
-        navigate("/admin-dashboard"); // Redirect to the admin dashboard
+        navigate("/dashboard"); // ✅ FIXED: Redirects to "/dashboard"
       }
     } catch (err) {
       setError(err.response?.data?.message || "Invalid admin credentials. Please try again.");
@@ -132,6 +132,7 @@ const AdminLogin = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              autoComplete="email"
             />
           </div>
 
@@ -142,6 +143,7 @@ const AdminLogin = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              autoComplete="current-password"
             />
             <span
               className="toggle-password"

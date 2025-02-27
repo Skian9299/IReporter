@@ -9,8 +9,11 @@ from models import User, RedFlag, Intervention
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# Enable CORS for all routes and methods
-CORS(app, supports_credentials=True)
+# Enable CORS globally for all domains
+CORS(app)
+
+# Restrict CORS to only allow requests from frontend
+CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)
 
 db.init_app(app)
 bcrypt.init_app(app)
@@ -27,5 +30,5 @@ app.register_blueprint(admin_routes, url_prefix="/api/admin")
 def home():
     return jsonify({"message": "Welcome to the iReporter API"}), 200
 
-if __name__ == "__main__":
+if __name__== "__main__":
     app.run(debug=True)

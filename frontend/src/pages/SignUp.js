@@ -34,7 +34,7 @@ const SignUp = () => {
     if (confirmPass && pass !== confirmPass) {
       setError("Passwords do not match.");
     } else {
-      setError("");
+      setError(""); // Reset error if passwords match
     }
   };
 
@@ -48,12 +48,12 @@ const SignUp = () => {
     setSuccessMessage("");
 
     try {
-      const response = await axios.post("http://127.0.0.1:5000/signup", {
+      const response = await axios.post("http://127.0.0.1:5000/api/auth/signup", {
         first_name: formData.first_name,
         last_name: formData.last_name,
         email: formData.email,
         password: formData.password,
-      });
+      }, { withCredentials: true });
 
       setSuccessMessage(response.data.message || "Sign-up successful! Please log in.");
       setFormData({
@@ -100,6 +100,7 @@ const SignUp = () => {
             value={formData.email}
             onChange={handleChange}
             required
+            autoComplete="email" // ✅ Fixed autocomplete
           />
 
           <div className="password-field">
@@ -110,6 +111,7 @@ const SignUp = () => {
               value={formData.password}
               onChange={handleChange}
               required
+              autoComplete="new-password" // ✅ Ensures proper password storage
             />
             <span
               className="toggle-password"
@@ -128,6 +130,7 @@ const SignUp = () => {
               value={formData.confirmPassword}
               onChange={handleChange}
               required
+              autoComplete="new-password" // ✅ Matches with password field
             />
             <span
               className="toggle-password"

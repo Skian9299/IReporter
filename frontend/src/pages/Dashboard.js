@@ -75,7 +75,7 @@ const Dashboard = () => {
     }
 
     try {
-      const response = await fetch("http://localhost:5000/redflags", {
+      const response = await fetch("http://localhost:5000/api/reports/redflags", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -114,7 +114,7 @@ const Dashboard = () => {
     }
 
     try {
-      const response = await fetch("http://localhost:5000/interventions", {
+      const response = await fetch("http://localhost:5000/api/reports/interventions", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,

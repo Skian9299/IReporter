@@ -7,6 +7,7 @@ import Login from "./pages/Login";
 import Admin from "./pages/Admin";
 import Dashboard from "./pages/Dashboard";
 import AllReports from "./pages/Reports";
+
 function App() {
   return (
     <Router>
@@ -16,8 +17,8 @@ function App() {
         <Route path="/signup" element={<SignUp />} />
         <Route path="/login" element={<Login />} />
         <Route path="/admin" element={<Admin />} />
-        <Route path="/dashboard" element={<Dashboard/>} />
-        <Route path="/reports" element={<AllReports/>} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/reports" element={<AllReports />} />
       </Routes>
     </Router>
   );
