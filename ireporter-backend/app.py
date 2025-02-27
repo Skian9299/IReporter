@@ -62,6 +62,42 @@ def handle_500_error(e):
 
 # ---------- AUTH ROUTES ---------- #
 
+
+@app.route('/signup', methods=['POST'])
+def signup():
+    """Register a new user"""
+    data = request.json
+    first_name = data.get('first_name')
+    last_name = data.get('last_name')
+    email = data.get('email')
+    password = data.get('password')
+
+    if not first_name or not last_name or not email or not password:
+        return jsonify({"error": "All fields are required"}), 400
+
+    existing_user = User.query.filter_by(email=email).first()
+    if existing_user:
+        return jsonify({"error": "Email is already registered"}), 400
+
+    hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+    new_user = User(first_name=first_name, last_name=last_name, email=email, password_hash=hashed_password)
+    
+    db.session.add(new_user)
+    db.session.commit()
+    
+    token = create_access_token(identity={"id": new_user.id, "email": new_user.email})
+    
+    return jsonify({
+        "message": "User registered successfully!",
+        "token": token,
+        "user": {
+            "id": new_user.id,
+            "first_name": new_user.first_name,
+            "last_name": new_user.last_name,
+            "email": new_user.email
+        }
+    }), 201
+
 @app.route('/login', methods=['POST'])
 def login():
     """Log in a user and return JWT token."""
