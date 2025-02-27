@@ -1,11 +1,11 @@
-/* Dashboard Container */
+
 .dashboard-container {
   padding: 20px;
   font-family: Arial, sans-serif;
-  margin-top: 80px; /* Push content below the navbar */
+  margin-top: 80px; 
 }
 
-/* Header Section */
+
 .dashboard-header {
   display: flex;
   justify-content: space-between;
@@ -22,7 +22,7 @@
   z-index: 1000;
 }
 
-/* User Info */
+
 .user-info {
   display: flex;
   align-items: center;
@@ -38,18 +38,18 @@
   object-fit: cover;
 }
 
-/* Hide default file input */
+
 input[type="file"] {
   display: none;
 }
 
-/* Username */
+
 .username {
   font-weight: bold;
   font-size: 16px;
 }
 
-/* Dashboard Buttons */
+
 .dashboard-buttons button {
   margin: 0 8px;
   padding: 10px 15px;
@@ -75,7 +75,7 @@ input[type="file"] {
   color: white;
 }
 
-/* Button Hover Effects */
+
 .dashboard-buttons button:hover {
   opacity: 0.8;
 }
@@ -84,7 +84,7 @@ input[type="file"] {
   transform: scale(0.95);
 }
 
-/* Reports Section */
+
 .report-sections {
   display: flex;
   justify-content: space-between;
@@ -93,7 +93,7 @@ input[type="file"] {
   flex-wrap: wrap;
 }
 
-/* Report Boxes */
+
 .report-box {
   flex: 1;
   min-width: 45%;
@@ -117,7 +117,7 @@ input[type="file"] {
   color: white;
 }
 
-/* Report Inputs */
+
 .report-box input,
 .report-box textarea {
   display: block;
@@ -130,13 +130,13 @@ input[type="file"] {
   background: white;
 }
 
-/* Increase textarea height and disable resizing */
+
 .report-box textarea {
   min-height: 150px;
   resize: none;
 }
 
-/* Report Actions */
+
 .report-actions {
   display: flex;
   align-items: center;
@@ -144,7 +144,7 @@ input[type="file"] {
   margin-top: 10px;
 }
 
-/* Report Upload & Location Buttons */
+
 .action-btn {
   background: #333;
   color: white;
@@ -163,19 +163,19 @@ input[type="file"] {
   background: #555;
 }
 
-/* Report Image Preview */
+
 .report-image {
-  width: 100%; /* Fit inside the report box */
-  max-width: 300px; /* Prevents oversized images */
-  max-height: 180px; /* Keeps image height controlled */
-  object-fit: cover; /* Ensures the image looks good */
+  width: 100%; 
+  max-width: 300px;
+  max-height: 180px; 
+  object-fit: cover; 
   border-radius: 6px;
   margin-top: 10px;
   border: 2px solid white;
   display: block;
 }
 
-/* Report Submit Button */
+
 .report-btn {
   width: 100%;
   padding: 12px;
@@ -193,12 +193,12 @@ input[type="file"] {
   background: #444;
 }
 
-/* RESPONSIVE DESIGN */
 
-/* Tablet View */
+
+
 @media (max-width: 1024px) {
   .report-sections {
-    flex-direction: column; /* Stack on smaller screens */
+    flex-direction: column;
     align-items: center;
   }
 
@@ -207,7 +207,7 @@ input[type="file"] {
   }
 }
 
-/* Mobile View */
+
 @media (max-width: 768px) {
   .dashboard-header {
     flex-direction: column;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import "./AllReports.css"; // Ensure you have styling for a clean UI
+import "./AllReports.css"; 
 
 const AllReports = () => {
   const navigate = useNavigate();
@@ -82,6 +82,9 @@ const AllReports = () => {
 
         <div className="dashboard-buttons">
           <button className="add-report" onClick={() => navigate("/dashboard")}>Add report</button>
+          <button className="all-reports" onClick={() => navigate("/reports")}>
+            All Reports
+          </button>
           <button className="logout" onClick={handleLogout}>Log Out</button>
         </div>
       </div>

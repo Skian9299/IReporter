@@ -1,24 +1,38 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Navbar from "./components/Navbar"; 
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import SignUp from "./pages/SignUp";
 import Login from "./pages/Login";
 import Admin from "./pages/Admin";
 import Dashboard from "./pages/Dashboard";
-import AllReports from "./pages/Reports";
-function App() {
+import AllReports from "./pages/AllReports";
+import AdminDashboard from "./pages/AdminDashboard";
+
+function Layout() {
+  const location = useLocation();
+  const hideNavbar = location.pathname === "/admindashboard"; 
+
   return (
-    <Router>
-      <Navbar /> 
+    <>
+      {!hideNavbar && <Navbar />}
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/login" element={<Login />} />
         <Route path="/admin" element={<Admin />} />
-        <Route path="/dashboard" element={<Dashboard/>} />
-        <Route path="/reports" element={<AllReports/>} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/reports" element={<AllReports />} />
+        <Route path="/admindashboard" element={<AdminDashboard />} />
       </Routes>
+    </>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <Layout />
     </Router>
   );
 }
