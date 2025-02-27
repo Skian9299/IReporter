@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-
-=======
->>>>>>> Quincy/Frontend
 import React, { useState } from "react";
 import axios from "axios";
 import "./SignUp.css";
@@ -150,6 +146,7 @@ const SignUp = () => {
           </button>
 
           <p className="or-text">OR</p>
+          <p className="or -text">Already have an account?</p>
           <a href="/login" className="login-link">Login</a>
         </form>
       </div>

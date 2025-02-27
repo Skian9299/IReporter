@@ -11,11 +11,12 @@ flask-sqlalchemy = "*"
 python-dotenv = "*"
 flask-migrate = "*"
 flask-bcrypt = "*"
-flask-login = "*"
 flask-marshmallow = "*"
-marshmallow = "*"
 serializers = "*"
 marshmallow-sqlalchemy = "*"
+flask-jwt-extended = "*"
+flask-login = "*"
+marshmallow = "*"
 
 [dev-packages]
 
