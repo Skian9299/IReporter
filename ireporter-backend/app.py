@@ -16,7 +16,7 @@ load_dotenv()
 app = Flask(__name__)
 
 # ---------- CONFIGURATION ---------- #
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///ireporter.db')  # Use PostgreSQL in production
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://ireporterdb_c6il_user:P9yvpo9BYESyuSYfgkW2npIxWAIj2GGM@dpg-cv0ahopopnds73b71tr0-a.oregon-postgres.render.com/ireporterdb_c6il')  # Use PostgreSQL in production
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'supersecretkey')  # Use environment variables
 app.config['UPLOAD_FOLDER'] = os.path.abspath('uploads')  # Ensure absolute path
