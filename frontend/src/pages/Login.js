@@ -13,7 +13,7 @@ const Login = () => {
 
   useEffect(() => {
     return () => {
-      setLoading(false); // Prevent state updates after unmount
+      setLoading(false); 
     };
   }, []);
 
@@ -40,7 +40,7 @@ const Login = () => {
 
         console.log("User logged in:", user);
 
-        // Redirect based on role
+       
         navigate(role === "admin" ? "/admin-dashboard" : "/dashboard");
       }
     } catch (err) {

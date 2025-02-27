@@ -1,4 +1,4 @@
-/* Main container */
+
 .login-container {
     display: flex;
     align-items: center;
@@ -8,7 +8,7 @@
     background: #f5f5f5;
 }
 
-/* Left Side - Form */
+
 .login-form {
     background: white;
     padding: 30px;
@@ -18,7 +18,7 @@
     max-width: 380px;
 }
 
-/* Form Titles */
+
 .login-form .title {
     font-size: 24px;
     font-weight: bold;
@@ -26,7 +26,7 @@
     margin-bottom: 10px;
 }
 
-/* Input Fields */
+
 .input-group input,
 .password-field input {
     width: 100%;
@@ -44,7 +44,7 @@
     outline: none;
 }
 
-/* Password Toggle */
+
 .password-field {
     position: relative;
 }
@@ -59,7 +59,7 @@
     color: #555;
 }
 
-/* Login Button */
+
 .login-btn {
     background: #3f51b5;
     color: white;
@@ -77,7 +77,7 @@
     background: #303f9f;
 }
 
-/* Error Message */
+
 .error-text {
     color: red;
     font-size: 14px;
@@ -85,7 +85,7 @@
     margin-bottom: 10px;
 }
 
-/* Forgot Password */
+
 .forgot-password {
     text-align: center;
     margin-top: 10px;
@@ -100,7 +100,7 @@
     text-decoration: underline;
 }
 
-/* OR Text */
+
 .or-text {
     text-align: center;
     margin: 12px 0;
@@ -108,7 +108,7 @@
     font-size: 14px;
 }
 
-/* Sign Up Link */
+
 .signup-link {
     text-align: center;
 }
@@ -123,7 +123,7 @@
     text-decoration: underline;
 }
 
-/* Right Side - Info Section */
+
 .login-info {
     max-width: 450px;
     text-align: center;
@@ -152,7 +152,7 @@
     font-weight: bold;
 }
 
-/* Responsive Design */
+
 @media (max-width: 768px) {
     .login-container {
         flex-direction: column;

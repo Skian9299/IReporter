@@ -1,4 +1,4 @@
-/* Main container */
+
 .admin-login-container {
     display: flex;
     align-items: center;
@@ -8,7 +8,7 @@
     background: #f5f5f5;
 }
 
-/* Left Side - Form */
+
 .admin-login-form {
     background: white;
     padding: 30px;
@@ -18,7 +18,7 @@
     max-width: 380px;
 }
 
-/* Titles */
+
 .admin-title {
     font-size: 24px;
     font-weight: bold;
@@ -32,7 +32,7 @@
     margin-bottom: 20px;
 }
 
-/* Input Fields */
+
 .input-group input,
 .password-field input {
     width: 100%;
@@ -50,7 +50,7 @@
     outline: none;
 }
 
-/* Password Toggle */
+
 .password-field {
     position: relative;
 }
@@ -65,7 +65,7 @@
     color: #555;
 }
 
-/* Login Button */
+
 .admin-login-btn {
     background: #3f51b5;
     color: white;
@@ -83,7 +83,7 @@
     background: #303f9f;
 }
 
-/* Error Message */
+
 .error-text {
     color: red;
     font-size: 14px;
@@ -91,7 +91,7 @@
     margin-bottom: 10px;
 }
 
-/* Forgot Password */
+
 .admin-forgot-password {
     text-align: center;
     margin-top: 10px;
@@ -103,7 +103,7 @@
     text-decoration: underline;
 }
 
-/* Right Side - Info Section */
+
 .admin-login-info {
     max-width: 450px;
     text-align: center;
@@ -132,7 +132,7 @@
     font-weight: bold;
 }
 
-/* Responsive Design */
+
 @media (max-width: 768px) {
     .admin-login-container {
         flex-direction: column;

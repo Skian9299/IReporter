@@ -1,5 +1,5 @@
 .home {
-    height: 100vh; /* Full screen height */
+    height: 100vh; 
     background: url("https://api-prod.gothamist.com/images/336138/fill-700x467%7Cformat-webp%7Cwebpquality-70/") center/cover no-repeat;
     display: flex;
     flex-direction: column;
@@ -31,7 +31,7 @@
     z-index: 1;
   }
 
-  /* How It Works Section */
+  
 .how-it-works {
     text-align: center;
     padding: 60px 20px;
@@ -43,14 +43,14 @@
     margin-bottom: 15px;
 }
 
-/* Make Steps Display Side-by-Side */
+
 .steps-container {
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 40px;
     margin-top: 20px;
-    flex-wrap: wrap;  /* Ensures responsiveness */
+    flex-wrap: wrap; 
 }
 
 .step {
@@ -72,7 +72,7 @@
     margin: 0 auto 15px;
 }
 
-/* Top Features Section */
+
 .top-features {
     text-align: center;
     padding: 60px 20px;
@@ -80,14 +80,14 @@
     color: white;
 }
 
-/* Make Features Display Side-by-Side */
+
 .features-container {
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 40px;
     margin-top: 20px;
-    flex-wrap: wrap;  /* Ensures responsiveness */
+    flex-wrap: wrap;  
 }
 
 .feature {
