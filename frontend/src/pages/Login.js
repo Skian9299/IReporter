@@ -23,7 +23,7 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post("http://127.0.0.1:5000/login", { email, password });
+      const response = await axios.post("https://ireporter-1-07fm.onrender.com/login", { email, password });
 
       if (response.status === 200) {
         const { token, role, user } = response.data;

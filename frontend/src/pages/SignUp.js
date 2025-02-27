@@ -48,7 +48,7 @@ const SignUp = () => {
     setSuccessMessage("");
 
     try {
-      const response = await axios.post("http://127.0.0.1:5000/signup", {
+      const response = await axios.post("https://ireporter-1-07fm.onrender.com/signup", {
         first_name: formData.first_name,
         last_name: formData.last_name,
         email: formData.email,

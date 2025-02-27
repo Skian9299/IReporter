@@ -21,7 +21,7 @@ const AllReports = () => {
 
   const fetchUserReports = async (token) => {
     try {
-      const response = await fetch("http://localhost:5000/reports", {
+      const response = await fetch("https://ireporter-1-07fm.onrender.com", {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
