@@ -48,7 +48,7 @@ const AllReports = () => {
     if (!confirmDelete) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/reports/${reportId}`, {
+      const response = await fetch(`https://ireporter-1-07fm.onrender.com/reports/${reportId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -98,7 +98,7 @@ const AllReports = () => {
               <div className="report-content">
                 <h3>{report.title}</h3>
                 <p>{report.description}</p>
-                {report.image && <img src={`http://localhost:5000/uploads/${report.image}`} alt="Report" className="report-image" />}
+                {report.image && <img src={`https://ireporter-1-07fm.onrender.com/uploads/${report.image}`} alt="Report" className="report-image" />}
               </div>
               <div className="report-actions">
                 <button onClick={() => handleEdit(report.id)}>Edit</button>

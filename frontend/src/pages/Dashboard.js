@@ -75,7 +75,7 @@ const Dashboard = () => {
     }
 
     try {
-      const response = await fetch("https://ireporter-1-07fm.onrender.com", {
+      const response = await fetch("https://ireporter-1-07fm.onrender.com/redflags", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
