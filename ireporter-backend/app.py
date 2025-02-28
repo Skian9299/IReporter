@@ -29,7 +29,7 @@ bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
 
 # Enable CORS for frontend
-CORS(app, resources={r"/*": {"origins": "https://ireporter-1-07fm.onrender.com"}}, supports_credentials=True)
+CORS(app, resources={r"/*": {"origins": "https://ireporters.vercel.app"}}, supports_credentials=True)
 
 # Ensure upload folder exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
