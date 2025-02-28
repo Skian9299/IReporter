@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import "./AllReports.css"; 
+import "./AllReports.css";
 
 const AllReports = () => {
   const navigate = useNavigate();
@@ -21,18 +21,28 @@ const AllReports = () => {
 
   const fetchUserReports = async (token) => {
     try {
-      const response = await fetch("https://ireporter-1-07fm.onrender.com/reports", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const [redFlagsResponse, interventionsResponse] = await Promise.all([
+        fetch("https://ireporter-1-07fm.onrender.com/redflags", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }),
+        fetch("https://ireporter-1-07fm.onrender.com/interventions", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }),
+      ]);
 
-      const data = await response.json();
-      if (response.ok) {
-        setReports([...data.redflags, ...data.interventions]);
+      const redFlagsData = await redFlagsResponse.json();
+      const interventionsData = await interventionsResponse.json();
+
+      if (redFlagsResponse.ok && interventionsResponse.ok) {
+        setReports([...redFlagsData, ...interventionsData]);
       } else {
-        console.error("Error fetching reports:", data.error);
+        console.error("Error fetching reports:", redFlagsData.error || interventionsData.error);
       }
     } catch (error) {
       console.error("Error:", error);

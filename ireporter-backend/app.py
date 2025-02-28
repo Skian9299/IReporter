@@ -136,6 +136,8 @@ def create_redflag():
         title = request.form.get('title') or request.json.get('title')
         description = request.form.get('description') or request.json.get('description')
         location = request.form.get('location') or request.json.get('location', 'Unknown')
+        latitude = request.form.get('latitude') or request.json.get('latitude')
+        longitude = request.form.get('longitude') or request.json.get('longitude')
         image_url = None
 
         if not title or not description:
@@ -155,6 +157,8 @@ def create_redflag():
             title=title,
             description=description,
             location=location,
+            latitude=latitude,
+            longitude=longitude,
             image_url=image_url,
             user_id=current_user['id']
         )
@@ -176,6 +180,44 @@ def get_redflags():
     except Exception as e:
         return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
 
+@app.route('/redflags/<int:redflag_id>', methods=['PUT'])
+@jwt_required()
+def update_redflag(redflag_id):
+    """Update a red flag record."""
+    try:
+        current_user = get_jwt_identity()
+        redflag = RedFlag.query.filter_by(id=redflag_id, user_id=current_user['id']).first()
+        if not redflag:
+            return jsonify({"error": "Red flag not found or unauthorized"}), 404
+
+        data = request.json
+        redflag.title = data.get('title', redflag.title)
+        redflag.description = data.get('description', redflag.description)
+        redflag.location = data.get('location', redflag.location)
+        redflag.latitude = data.get('latitude', redflag.latitude)
+        redflag.longitude = data.get('longitude', redflag.longitude)
+
+        db.session.commit()
+        return jsonify({"message": "Red flag updated", "redflag": redflag_schema.dump(redflag)}), 200
+    except Exception as e:
+        return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
+
+@app.route('/redflags/<int:redflag_id>', methods=['DELETE'])
+@jwt_required()
+def delete_redflag(redflag_id):
+    """Delete a red flag record."""
+    try:
+        current_user = get_jwt_identity()
+        redflag = RedFlag.query.filter_by(id=redflag_id, user_id=current_user['id']).first()
+        if not redflag:
+            return jsonify({"error": "Red flag not found or unauthorized"}), 404
+
+        db.session.delete(redflag)
+        db.session.commit()
+        return jsonify({"message": "Red flag deleted"}), 200
+    except Exception as e:
+        return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
+
 # ---------- INTERVENTION CRUD ROUTES ---------- #
 
 @app.route('/interventions', methods=['POST'])
@@ -187,6 +229,8 @@ def create_intervention():
         title = request.form.get('title') or request.json.get('title')
         description = request.form.get('description') or request.json.get('description')
         location = request.form.get('location') or request.json.get('location', 'Unknown')
+        latitude = request.form.get('latitude') or request.json.get('latitude')
+        longitude = request.form.get('longitude') or request.json.get('longitude')
         image_url = None
 
         if not title or not description:
@@ -206,6 +250,8 @@ def create_intervention():
             title=title,
             description=description,
             location=location,
+            latitude=latitude,
+            longitude=longitude,
             image_url=image_url,
             user_id=current_user['id']
         )
@@ -226,23 +272,44 @@ def get_interventions():
         return jsonify(interventions_schema.dump(interventions)), 200
     except Exception as e:
         return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
-    
-@app.route('/reports', methods=['GET'])
+
+@app.route('/interventions/<int:intervention_id>', methods=['PUT'])
 @jwt_required()
-def get_reports():
-    """Get all reports (red flags and interventions) created by the logged-in user."""
+def update_intervention(intervention_id):
+    """Update an intervention record."""
     try:
         current_user = get_jwt_identity()
-        redflags = RedFlag.query.filter_by(user_id=current_user['id']).all()
-        interventions = Intervention.query.filter_by(user_id=current_user['id']).all()
-        
-        return jsonify({
-            "redflags": redflags_schema.dump(redflags),
-            "interventions": interventions_schema.dump(interventions)
-        }), 200
+        intervention = Intervention.query.filter_by(id=intervention_id, user_id=current_user['id']).first()
+        if not intervention:
+            return jsonify({"error": "Intervention not found or unauthorized"}), 404
+
+        data = request.json
+        intervention.title = data.get('title', intervention.title)
+        intervention.description = data.get('description', intervention.description)
+        intervention.location = data.get('location', intervention.location)
+        intervention.latitude = data.get('latitude', intervention.latitude)
+        intervention.longitude = data.get('longitude', intervention.longitude)
+
+        db.session.commit()
+        return jsonify({"message": "Intervention updated", "intervention": intervention_schema.dump(intervention)}), 200
     except Exception as e:
         return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
-    
+
+@app.route('/interventions/<int:intervention_id>', methods=['DELETE'])
+@jwt_required()
+def delete_intervention(intervention_id):
+    """Delete an intervention record."""
+    try:
+        current_user = get_jwt_identity()
+        intervention = Intervention.query.filter_by(id=intervention_id, user_id=current_user['id']).first()
+        if not intervention:
+            return jsonify({"error": "Intervention not found or unauthorized"}), 404
+
+        db.session.delete(intervention)
+        db.session.commit()
+        return jsonify({"message": "Intervention deleted"}), 200
+    except Exception as e:
+        return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
 
 # ---------- FILE UPLOAD ROUTE ---------- #
 
