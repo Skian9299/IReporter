@@ -16,7 +16,7 @@ load_dotenv()
 app = Flask(__name__)
 
 # ---------- CONFIGURATION ---------- #
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://ireporterdb_c6il_user:P9yvpo9BYESyuSYfgkW2npIxWAIj2GGM@dpg-cv0ahopopnds73b71tr0-a.oregon-postgres.render.com/ireporterdb_c6il')  # Use PostgreSQL in production
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://ireporterdb_c6il_user:P9yvpo9BYESyuSYfgkW2npIxWAIj2GGM@dpg-cv0ahopopnds73b71tr0-a.oregon-postgres.render.com/ireporterdb_c6il') 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'supersecretkey')  # Use environment variables
 app.config['UPLOAD_FOLDER'] = os.path.abspath('uploads')  # Ensure absolute path
@@ -29,7 +29,7 @@ bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
 
 # Enable CORS for frontend
-CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)
+CORS(app, resources={r"/*": {"origins": "https://ireporter-1-07fm.onrender.com"}}, supports_credentials=True)
 
 # Ensure upload folder exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
