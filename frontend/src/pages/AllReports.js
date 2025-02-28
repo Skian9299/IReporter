@@ -21,7 +21,7 @@ const AllReports = () => {
 
   const fetchUserReports = async (token) => {
     try {
-      const response = await fetch("https://ireporter-1-07fm.onrender.com", {
+      const response = await fetch("https://ireporter-1-07fm.onrender.com/reports", {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -30,7 +30,7 @@ const AllReports = () => {
 
       const data = await response.json();
       if (response.ok) {
-        setReports(data);
+        setReports([...data.redflags, ...data.interventions]);
       } else {
         console.error("Error fetching reports:", data.error);
       }

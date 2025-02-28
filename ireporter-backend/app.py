@@ -226,6 +226,23 @@ def get_interventions():
         return jsonify(interventions_schema.dump(interventions)), 200
     except Exception as e:
         return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
+    
+@app.route('/reports', methods=['GET'])
+@jwt_required()
+def get_reports():
+    """Get all reports (red flags and interventions) created by the logged-in user."""
+    try:
+        current_user = get_jwt_identity()
+        redflags = RedFlag.query.filter_by(user_id=current_user['id']).all()
+        interventions = Intervention.query.filter_by(user_id=current_user['id']).all()
+        
+        return jsonify({
+            "redflags": redflags_schema.dump(redflags),
+            "interventions": interventions_schema.dump(interventions)
+        }), 200
+    except Exception as e:
+        return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
+    
 
 # ---------- FILE UPLOAD ROUTE ---------- #
 
