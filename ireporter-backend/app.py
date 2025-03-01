@@ -16,7 +16,7 @@ load_dotenv()
 app = Flask(__name__)
 
 # ---------- CONFIGURATION ---------- #
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://ireporterdb_c6il_user:P9yvpo9BYESyuSYfgkW2npIxWAIj2GGM@dpg-cv0ahopopnds73b71tr0-a.oregon-postgres.render.com/ireporterdb_c6il') 
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://ireporterdb_c6il_user:P9yvpo9BYESyuSYfgkW2npIxWAIj2GGM@dpg-cv0ahopopnds73b71tr0-a.oregon-postgres.render.com/ireporterdb_c6il')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'supersecretkey')  # Use environment variables
 app.config['UPLOAD_FOLDER'] = os.path.abspath('uploads')  # Ensure absolute path
@@ -28,9 +28,15 @@ migrate = Migrate(app, db)
 bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
 
-# Enable CORS for frontend
-CORS(app, resources={r"/*": {"origins": "https://ireporters.vercel.app"}}, supports_credentials=True)
-
+# Enable CORS for all routes
+CORS(app, resources={
+    r"/*": {
+        "origins": ["https://ireporters.vercel.app", "http://localhost:3000"],  # Add your frontend URL(s)
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Allow all necessary methods
+        "allow_headers": ["Authorization", "Content-Type"],  # Allow necessary headers
+        "supports_credentials": True  # Allow cookies and credentials
+    }
+})
 # Ensure upload folder exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
@@ -311,6 +317,11 @@ def delete_intervention(intervention_id):
 def uploaded_file(filename):
     """Serve uploaded images."""
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+@app.errorhandler(500)
+def handle_500_error(e):
+    print("Internal Server Error:", str(e))  # Log the error
+    return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
 
 # ---------- RUN APP ---------- #
 if __name__ == '__main__':

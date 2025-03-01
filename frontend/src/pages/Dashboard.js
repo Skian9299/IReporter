@@ -65,7 +65,7 @@ const Dashboard = () => {
       alert("Please fill in all fields for the red flag report.");
       return;
     }
-
+  
     const formData = new FormData();
     formData.append("title", redFlagTitle);
     formData.append("description", redFlagDescription);
@@ -73,7 +73,7 @@ const Dashboard = () => {
     if (redFlagImage) {
       formData.append("image", redFlagImage);
     }
-
+  
     try {
       const response = await fetch("https://ireporter-1-07fm.onrender.com/redflags", {
         method: "POST",
@@ -82,7 +82,7 @@ const Dashboard = () => {
         },
         body: formData,
       });
-
+  
       const data = await response.json();
       if (response.ok) {
         alert("Red flag report submitted successfully!");
