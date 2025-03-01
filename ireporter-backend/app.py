@@ -136,8 +136,7 @@ def create_redflag():
         title = request.form.get('title') or request.json.get('title')
         description = request.form.get('description') or request.json.get('description')
         location = request.form.get('location') or request.json.get('location', 'Unknown')
-        latitude = request.form.get('latitude') or request.json.get('latitude')
-        longitude = request.form.get('longitude') or request.json.get('longitude')
+        status = request.form.get('status') or request.json.get('status', Status.DRAFT.name)
         image_url = None
 
         if not title or not description:
@@ -157,15 +156,14 @@ def create_redflag():
             title=title,
             description=description,
             location=location,
-            latitude=latitude,
-            longitude=longitude,
+            status=status,
             image_url=image_url,
             user_id=current_user['id']
         )
 
         db.session.add(redflag)
         db.session.commit()
-        return jsonify({"message": "Red flag created", "redflag": redflag_schema.dump(redflag)}), 201
+        return jsonify({"message": "Red flag created", "redflag": redflag.serialize()}), 201
     except Exception as e:
         return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
 
@@ -176,7 +174,7 @@ def get_redflags():
     try:
         current_user = get_jwt_identity()
         redflags = RedFlag.query.filter_by(user_id=current_user['id']).all()
-        return jsonify(redflags_schema.dump(redflags)), 200
+        return jsonify([redflag.serialize() for redflag in redflags]), 200
     except Exception as e:
         return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
 
@@ -194,11 +192,10 @@ def update_redflag(redflag_id):
         redflag.title = data.get('title', redflag.title)
         redflag.description = data.get('description', redflag.description)
         redflag.location = data.get('location', redflag.location)
-        redflag.latitude = data.get('latitude', redflag.latitude)
-        redflag.longitude = data.get('longitude', redflag.longitude)
+        redflag.status = data.get('status', redflag.status)
 
         db.session.commit()
-        return jsonify({"message": "Red flag updated", "redflag": redflag_schema.dump(redflag)}), 200
+        return jsonify({"message": "Red flag updated", "redflag": redflag.serialize()}), 200
     except Exception as e:
         return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
 
@@ -229,8 +226,7 @@ def create_intervention():
         title = request.form.get('title') or request.json.get('title')
         description = request.form.get('description') or request.json.get('description')
         location = request.form.get('location') or request.json.get('location', 'Unknown')
-        latitude = request.form.get('latitude') or request.json.get('latitude')
-        longitude = request.form.get('longitude') or request.json.get('longitude')
+        status = request.form.get('status') or request.json.get('status', Status.DRAFT.name)
         image_url = None
 
         if not title or not description:
@@ -250,15 +246,14 @@ def create_intervention():
             title=title,
             description=description,
             location=location,
-            latitude=latitude,
-            longitude=longitude,
+            status=status,
             image_url=image_url,
             user_id=current_user['id']
         )
 
         db.session.add(intervention)
         db.session.commit()
-        return jsonify({"message": "Intervention created", "intervention": intervention_schema.dump(intervention)}), 201
+        return jsonify({"message": "Intervention created", "intervention": intervention.serialize()}), 201
     except Exception as e:
         return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
 
@@ -269,7 +264,7 @@ def get_interventions():
     try:
         current_user = get_jwt_identity()
         interventions = Intervention.query.filter_by(user_id=current_user['id']).all()
-        return jsonify(interventions_schema.dump(interventions)), 200
+        return jsonify([intervention.serialize() for intervention in interventions]), 200
     except Exception as e:
         return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
 
@@ -287,11 +282,10 @@ def update_intervention(intervention_id):
         intervention.title = data.get('title', intervention.title)
         intervention.description = data.get('description', intervention.description)
         intervention.location = data.get('location', intervention.location)
-        intervention.latitude = data.get('latitude', intervention.latitude)
-        intervention.longitude = data.get('longitude', intervention.longitude)
+        intervention.status = data.get('status', intervention.status)
 
         db.session.commit()
-        return jsonify({"message": "Intervention updated", "intervention": intervention_schema.dump(intervention)}), 200
+        return jsonify({"message": "Intervention updated", "intervention": intervention.serialize()}), 200
     except Exception as e:
         return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
 

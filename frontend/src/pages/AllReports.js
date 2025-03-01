@@ -7,6 +7,7 @@ const AllReports = () => {
   const [username, setUsername] = useState("User");
   const [reports, setReports] = useState([]);
 
+  // Fetch user reports on component mount
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("user"));
     const token = localStorage.getItem("token");
@@ -19,6 +20,7 @@ const AllReports = () => {
     }
   }, [navigate]);
 
+  // Fetch red flags and interventions for the logged-in user
   const fetchUserReports = async (token) => {
     try {
       const [redFlagsResponse, interventionsResponse] = await Promise.all([
@@ -40,6 +42,7 @@ const AllReports = () => {
       const interventionsData = await interventionsResponse.json();
 
       if (redFlagsResponse.ok && interventionsResponse.ok) {
+        // Combine red flags and interventions into a single array
         setReports([...redFlagsData, ...interventionsData]);
       } else {
         console.error("Error fetching reports:", redFlagsData.error || interventionsData.error);
@@ -49,10 +52,12 @@ const AllReports = () => {
     }
   };
 
+  // Handle edit action
   const handleEdit = (reportId) => {
     navigate(`/edit-report/${reportId}`);
   };
 
+  // Handle delete action
   const handleDelete = async (reportId) => {
     const confirmDelete = window.confirm("Are you sure you want to delete this report?");
     if (!confirmDelete) return;
@@ -67,6 +72,7 @@ const AllReports = () => {
 
       if (response.ok) {
         alert("Report deleted successfully.");
+        // Remove the deleted report from the state
         setReports(reports.filter((report) => report.id !== reportId));
       } else {
         const data = await response.json();
@@ -77,6 +83,7 @@ const AllReports = () => {
     }
   };
 
+  // Handle logout action
   const handleLogout = () => {
     localStorage.clear();
     navigate("/");
@@ -84,6 +91,7 @@ const AllReports = () => {
 
   return (
     <div className="reports-container">
+      {/* Header Section */}
       <div className="reports-header">
         <div className="user-info">
           <img src="default-avatar.png" alt="Profile" className="profile-pic" />
@@ -91,7 +99,7 @@ const AllReports = () => {
         </div>
 
         <div className="dashboard-buttons">
-          <button className="add-report" onClick={() => navigate("/dashboard")}>Add report</button>
+          <button className="add-report" onClick={() => navigate("/dashboard")}>Add Report</button>
           <button className="all-reports" onClick={() => navigate("/reports")}>
             All Reports
           </button>
@@ -99,6 +107,7 @@ const AllReports = () => {
         </div>
       </div>
 
+      {/* Reports List Section */}
       <h2>Your Reports</h2>
 
       <div className="reports-list">
@@ -108,7 +117,15 @@ const AllReports = () => {
               <div className="report-content">
                 <h3>{report.title}</h3>
                 <p>{report.description}</p>
-                {report.image && <img src={`https://ireporter-1-07fm.onrender.com/uploads/${report.image}`} alt="Report" className="report-image" />}
+                <p><strong>Status:</strong> {report.status}</p>
+                <p><strong>Created At:</strong> {new Date(report.created_at).toLocaleString()}</p>
+                {report.image_url && (
+                  <img
+                    src={`https://ireporter-1-07fm.onrender.com/uploads/${report.image_url}`}
+                    alt="Report"
+                    className="report-image"
+                  />
+                )}
               </div>
               <div className="report-actions">
                 <button onClick={() => handleEdit(report.id)}>Edit</button>
