@@ -1,303 +1,164 @@
-// import React, { useState, useEffect, useCallback } from "react";
-// import { useNavigate } from "react-router-dom";
-// import "./AllReports.css"; 
+import React, { useState } from "react";
+import axios from "axios";
+import "./SignUp.css";
 
-// const AllReports = () => {
-//   const navigate = useNavigate();
-//   const [username, setUsername] = useState("User");
-//   const [reports, setReports] = useState([]);
-//   const [loading, setLoading] = useState(true);
-//   const [error, setError] = useState(null);
+const SignUp = () => {
+  const [formData, setFormData] = useState({
+    first_name: "",
+    last_name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
 
-//   // Helper function to parse localStorage safely
-//   const getStoredUser = () => {
-//     try {
-//       return JSON.parse(localStorage.getItem("user"));
-//     } catch {
-//       return null;
-//     }
-//   };
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
-//   // Fetch user reports
-//   const fetchUserReports = useCallback(async (token) => {
-//     try {
-//       setLoading(true);
-//       setError(null);
+  // Handle input changes
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
 
-//       const [redFlagsResponse, interventionsResponse] = await Promise.all([
-//         fetch("http://localhost:5000/redflags", {
-//           method: "GET",
-//           headers: { Authorization: `Bearer ${token}` },
-//         }),
-//         fetch("http://localhost:5000/interventions", {
-//           method: "GET",
-//           headers: { Authorization: `Bearer ${token}` },
-//         }),
-//       ]);
-
-//       if (!redFlagsResponse.ok) {
-//         throw new Error("Failed to fetch red flags");
-//       }
-//       if (!interventionsResponse.ok) {
-//         throw new Error("Failed to fetch interventions");
-//       }
-
-//       const [redFlags, interventions] = await Promise.all([
-//         redFlagsResponse.json(),
-//         interventionsResponse.json(),
-//       ]);
-
-//       setReports([...redFlags, ...interventions]);
-//     } catch (error) {
-//       console.error("Error fetching reports:", error);
-//       setError(error.message || "Failed to fetch reports.");
-//     } finally {
-//       setLoading(false);
-//     }
-//   }, []);
-
-//   useEffect(() => {
-//     const storedUser = getStoredUser();
-//     const token = localStorage.getItem("token");
-
-//     if (storedUser && storedUser.first_name && storedUser.last_name && token) {
-//       setUsername(`${storedUser.first_name} ${storedUser.last_name}`);
-//       fetchUserReports(token);
-//     } else {
-//       navigate("/login");
-//     }
-//   }, [navigate, fetchUserReports]);
-
-//   // Handle edit
-//   const handleEdit = (report) => {
-//     const reportType = report.type; // Assuming you store the type in each report
-//     navigate(`/edit-report/${report.id}?type=${reportType}`);
-//   };
-
-//   // Handle delete
-//   const handleDelete = async (report) => {
-//     if (!window.confirm("Are you sure you want to delete this report?")) return;
-
-//     const endpoint = report.type === "redflag" ? "redflags" : "interventions";
-
-//     try {
-//       const response = await fetch(`http://localhost:5000/${endpoint}/${report.id}`, {
-//         method: "DELETE",
-//         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-//       });
-
-//       if (!response.ok) throw new Error("Failed to delete report");
-//       setReports(reports.filter((r) => r.id !== report.id));
-//       alert("Report deleted successfully.");
-//     } catch (error) {
-//       console.error("Error deleting report:", error);
-//       alert("An error occurred while deleting the report.");
-//     }
-//   };
-
-//   // Handle logout
-//   const handleLogout = () => {
-//     localStorage.clear();
-//     navigate("/");
-//   };
-
-//   return (
-//     <div className="reports-container">
-//       <div className="reports-header">
-//         <div className="user-info">
-//           <img src="default-avatar.png" alt="Profile" className="profile-pic" />
-//           <span className="username">{username}</span>
-//         </div>
-//         <div className="dashboard-buttons">
-//           <button onClick={() => navigate("/dashboard")}>Add Report</button>
-//           <button onClick={() => navigate("/reports")}>All Reports</button>
-//           <button onClick={handleLogout}>Log Out</button>
-//         </div>
-//       </div>
-
-//       <h2>Your Reports</h2>
-
-//       {loading ? (
-//         <p>Loading reports...</p>
-//       ) : error ? (
-//         <p className="error-message">{error}</p>
-//       ) : reports.length > 0 ? (
-//         <div className="reports-list">
-//           {reports.map((report) => (
-//             <div key={report.id} className="report-card">
-//               <div className="report-content">
-//                 <h3>{report.title}</h3>
-//                 <p>{report.description}</p>
-//                 {report.image && <img src={`http://localhost:5000/uploads/${report.image}`} alt="Report" className="report-image" />}
-//               </div>
-//               <div className="report-actions">
-//                 <button onClick={() => handleEdit(report)}>Edit</button>
-//                 <button onClick={() => handleDelete(report)}>Delete</button>
-//               </div>
-//             </div>
-//           ))}
-//         </div>
-//       ) : (
-//         <p>No reports found.</p>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default AllReports;
-
-
-import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import "./AllReports.css";
-
-const AllReports = () => {
-  const navigate = useNavigate();
-  const [username, setUsername] = useState("User");
-  const [reports, setReports] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  // Helper function to parse localStorage safely
-  const getStoredUser = () => {
-    try {
-      return JSON.parse(localStorage.getItem("user"));
-    } catch {
-      return null;
+    if (e.target.name === "password" || e.target.name === "confirmPassword") {
+      validatePasswords(
+        e.target.name === "password" ? e.target.value : formData.password,
+        e.target.name === "confirmPassword" ? e.target.value : formData.confirmPassword
+      );
     }
   };
 
-  // Fetch user reports with AbortController to prevent memory leaks
-  const fetchUserReports = useCallback(async (token) => {
-    const controller = new AbortController();
+  // Validate password match
+  const validatePasswords = (pass, confirmPass) => {
+    if (confirmPass && pass !== confirmPass) {
+      setError("Passwords do not match.");
+    } else {
+      setError("");
+    }
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (error) return;
+
+    setLoading(true);
+    setError("");
+    setSuccessMessage("");
+
     try {
-      setLoading(true);
-      setError(null);
+      const response = await axios.post("http://127.0.0.1:5000/signup", {
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        email: formData.email,
+        password: formData.password,
+      });
 
-      const [redFlagsResponse, interventionsResponse] = await Promise.all([
-        fetch("http://localhost:5000/redflags", {
-          method: "GET",
-          headers: { Authorization: `Bearer ${token}` },
-          signal: controller.signal,
-        }),
-        fetch("http://localhost:5000/interventions", {
-          method: "GET",
-          headers: { Authorization: `Bearer ${token}` },
-          signal: controller.signal,
-        }),
-      ]);
-
-      if (!redFlagsResponse.ok) throw new Error("Failed to fetch red flags");
-      if (!interventionsResponse.ok) throw new Error("Failed to fetch interventions");
-
-      const [redFlags, interventions] = await Promise.all([
-        redFlagsResponse.json(),
-        interventionsResponse.json(),
-      ]);
-
-      // Ensure each report has a type for handling edits & deletions
-      const formattedRedFlags = redFlags.map((r) => ({ ...r, type: "redflag" }));
-      const formattedInterventions = interventions.map((i) => ({ ...i, type: "intervention" }));
-
-      setReports([...formattedRedFlags, ...formattedInterventions]);
-    } catch (error) {
-      if (error.name !== "AbortError") {
-        console.error("Error fetching reports:", error);
-        setError(error.message || "Failed to fetch reports.");
-      }
+      setSuccessMessage(response.data.message || "Sign-up successful! Please log in.");
+      setFormData({
+        first_name: "",
+        last_name: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+      });
+    } catch (err) {
+      setError(err.response?.data?.error || "An error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
-    return () => controller.abort();
-  }, []);
-
-  useEffect(() => {
-    const storedUser = getStoredUser();
-    const token = localStorage.getItem("token");
-
-    if (storedUser && storedUser.first_name && storedUser.last_name && token) {
-      setUsername(`${storedUser.first_name} ${storedUser.last_name}`);
-      fetchUserReports(token);
-    } else {
-      navigate("/login");
-    }
-  }, [navigate, fetchUserReports]);
-
-  // Handle edit
-  const handleEdit = (report) => {
-    navigate(`/edit-report/${report.id}?type=${report.type}`);
-  };
-
-  // Handle delete
-  const handleDelete = async (report) => {
-    const confirmed = window.confirm(`Delete "${report.title}"? This action cannot be undone.`);
-    if (!confirmed) return;
-
-    const endpoint = report.type === "redflag" ? "redflags" : "interventions";
-
-    try {
-      const response = await fetch(`http://localhost:5000/${endpoint}/${report.id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-
-      if (!response.ok) throw new Error("Failed to delete report");
-      setReports(reports.filter((r) => r.id !== report.id));
-      alert("Report deleted successfully.");
-    } catch (error) {
-      console.error("Error deleting report:", error);
-      alert("An error occurred while deleting the report.");
-    }
-  };
-
-  // Handle logout
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
-    navigate("/");
   };
 
   return (
-    <div className="reports-container">
-      <div className="reports-header">
-        <div className="user-info">
-          <img src="default-avatar.png" alt="Profile" className="profile-pic" />
-          <span className="username">{username}</span>
-        </div>
-        <div className="dashboard-buttons">
-          <button onClick={() => navigate("/dashboard")}>Add Report</button>
-          <button onClick={() => navigate("/reports")}>All Reports</button>
-          <button onClick={handleLogout}>Log Out</button>
-        </div>
+    <div className="signup-container">
+      <div className="signup-form">
+        <h2 className="title">👁️ Reporter</h2>
+        <p className="subtitle">Fill in the form to create an account</p>
+
+        <form onSubmit={handleSubmit}>
+          <input
+            type="text"
+            name="first_name"
+            placeholder="First Name"
+            value={formData.first_name}
+            onChange={handleChange}
+            required
+          />
+          <input
+            type="text"
+            name="last_name"
+            placeholder="Last Name"
+            value={formData.last_name}
+            onChange={handleChange}
+            required
+          />
+          <input
+            type="email"
+            name="email"
+            placeholder="Email Address"
+            value={formData.email}
+            onChange={handleChange}
+            required
+          />
+
+          <div className="password-field">
+            <input
+              type={showPassword ? "text" : "password"}
+              name="password"
+              placeholder="Enter your password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+            />
+            <span
+              className="toggle-password"
+              onClick={() => setShowPassword(!showPassword)}
+              role="button"
+            >
+              {showPassword ? "👁️" : "🙈"}
+            </span>
+          </div>
+
+          <div className="password-field">
+            <input
+              type={showConfirmPassword ? "text" : "password"}
+              name="confirmPassword"
+              placeholder="Confirm your password"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              required
+            />
+            <span
+              className="toggle-password"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              role="button"
+            >
+              {showConfirmPassword ? "👁️" : "🙈"}
+            </span>
+          </div>
+
+          {error && <p className="error-text">{error}</p>}
+          {successMessage && <p className="success-text">{successMessage}</p>}
+
+          <button type="submit" className="signup-btn" disabled={error !== "" || loading}>
+            {loading ? "Signing Up..." : "Sign Up"}
+          </button>
+
+          <p className="or-text">OR</p>
+          <p className="or -text">Already have an account?</p>
+          <a href="/login" className="login-link">Login</a>
+        </form>
       </div>
 
-      <h2>Your Reports</h2>
-
-      {loading ? (
-        <p>Loading reports...</p>
-      ) : error ? (
-        <p className="error-message">{error}</p>
-      ) : reports.length > 0 ? (
-        <div className="reports-list">
-          {reports.map((report) => (
-            <div key={report.id} className="report-card">
-              <div className="report-content">
-                <h3>{report.title}</h3>
-                <p>{report.description}</p>
-                {report.image && <img src={`http://localhost:5000/uploads/${report.image}`} alt="Report" className="report-image" />}
-              </div>
-              <div className="report-actions">
-                <button onClick={() => handleEdit(report)}>Edit</button>
-                <button onClick={() => handleDelete(report)}>Delete</button>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p>No reports found.</p>
-      )}
+      <div className="signup-info">
+        <h2 className="hero-text">
+          Let’s build the Nation <span className="bold-text">together</span>
+        </h2>
+        <p>👁️ <span className="highlight">Reporter</span> is a platform for every citizen.</p>
+      </div>
     </div>
   );
 };
 
-export default AllReports;
+export default SignUp;
