@@ -37,3 +37,4 @@ redflag_schema = RedFlagSchema()
 redflags_schema = RedFlagSchema(many=True)
 intervention_schema = InterventionSchema()
 interventions_schema = InterventionSchema(many=True)
+
