@@ -72,8 +72,8 @@ class RedFlag(db.Model, SerializerMixin):
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=False)
     location = db.Column(db.String(255), nullable=False)
-    status = db.Column(db.Enum(Status), default=Status.DRAFT.name, nullable=False)
-    image_url = db.Column(db.String(255), nullable=True)  # ✅ Added image_url field
+    status = db.Column(db.Enum(Status), default=Status.DRAFT, nullable=False)  # ✅ Fixed default value
+    image_url = db.Column(db.String(255), nullable=True)  # ✅ Correct field name
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -90,8 +90,8 @@ class Intervention(db.Model, SerializerMixin):
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=False)
     location = db.Column(db.String(255), nullable=False)
-    status = db.Column(db.Enum(Status), default=Status.DRAFT.name, nullable=False)
-    image_url = db.Column(db.String(255), nullable=True)  # ✅ Added image_url field
+    status = db.Column(db.Enum(Status), default=Status.DRAFT, nullable=False)  # ✅ Fixed default value
+    image_url = db.Column(db.String(255), nullable=True)  # ✅ Correct field name
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -109,12 +109,6 @@ class Media(db.Model, SerializerMixin):
     file_type = db.Column(db.String(50), nullable=False)  # Image or Video
     redflag_id = db.Column(db.Integer, db.ForeignKey('red_flags.id'), nullable=True)
     intervention_id = db.Column(db.Integer, db.ForeignKey('interventions.id'), nullable=True)
-
-    def __init__(self, **kwargs):
-        """Ensure media belongs to either a RedFlag or an Intervention."""
-        super().__init__(**kwargs)
-        if not self.redflag_id and not self.intervention_id:
-            raise ValueError("Media must belong to either a RedFlag or an Intervention.")
 
 # Notification Model
 class Notification(db.Model, SerializerMixin):
