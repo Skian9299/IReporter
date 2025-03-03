@@ -41,7 +41,10 @@ const SignUp = () => {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (error) return;
+    if (error || formData.password === "" || formData.confirmPassword === "") {
+      setError("Please fill all fields correctly.");
+      return;
+    }
 
     setLoading(true);
     setError("");
@@ -53,6 +56,7 @@ const SignUp = () => {
         last_name: formData.last_name,
         email: formData.email,
         password: formData.password,
+        confirm_password: formData.confirmPassword, // Backend expects this field
       });
 
       setSuccessMessage(response.data.message || "Sign-up successful! Please log in.");
@@ -146,7 +150,7 @@ const SignUp = () => {
           </button>
 
           <p className="or-text">OR</p>
-          <p className="or -text">Already have an account?</p>
+          <p className="or-text">Already have an account?</p>
           <a href="/login" className="login-link">Login</a>
         </form>
       </div>

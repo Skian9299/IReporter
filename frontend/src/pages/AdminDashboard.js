@@ -6,7 +6,7 @@ const AdminDashboard = ({ onLogout }) => {
   const [reports, setReports] = useState([]);
   const [filteredReports, setFilteredReports] = useState([]);
   const [filterType, setFilterType] = useState("all");
-  const [adminName, setAdminName] = useState("Admin Quincy");
+  const [adminName, setAdminName] = useState("Admin");
   const [profilePic, setProfilePic] = useState(localStorage.getItem("adminAvatar") || "");
 
   useEffect(() => {
