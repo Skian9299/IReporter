@@ -8,6 +8,7 @@ import Admin from "./pages/Admin";
 import Dashboard from "./pages/Dashboard";
 import AllReports from "./pages/AllReports";
 import AdminDashboard from "./pages/AdminDashboard";
+import PasswordReset from "./pages/PasswordReset";
 
 function Layout() {
   const location = useLocation();
@@ -24,6 +25,10 @@ function Layout() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/reports" element={<AllReports />} />
         <Route path="/admindashboard" element={<AdminDashboard />} />
+        <Route path="/forgot-password" element={<PasswordReset />} />
+        <Route path="/admin-forgot-password" element={<PasswordReset />} />
+        
+
       </Routes>
     </>
   );

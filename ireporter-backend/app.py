@@ -7,7 +7,7 @@ from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import os
 from dotenv import load_dotenv
-from models import db, User, RedFlag, Intervention, Media
+from models import db, User, RedFlag, Intervention
 from serializers import user_schema, redflag_schema, redflags_schema, intervention_schema, interventions_schema
 
 # Load environment variables
@@ -16,10 +16,10 @@ load_dotenv()
 app = Flask(__name__)
 
 # ---------- CONFIGURATION ---------- #
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://ireporterdb_c6il_user:P9yvpo9BYESyuSYfgkW2npIxWAIj2GGM@dpg-cv0ahopopnds73b71tr0-a.oregon-postgres.render.com/ireporterdb_c6il')  # Use PostgreSQL in production
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///ireporter.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'supersecretkey')  # Use environment variables
-app.config['UPLOAD_FOLDER'] = os.path.abspath('uploads')  # Ensure absolute path
+app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'supersecretkey')
+app.config['UPLOAD_FOLDER'] = os.path.abspath('uploads')
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif'}
 
 # Initialize Extensions
@@ -27,83 +27,150 @@ db.init_app(app)
 migrate = Migrate(app, db)
 bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
-
-# Enable CORS for frontend
 CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)
 
 # Ensure upload folder exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # ---------- HELPER FUNCTIONS ---------- #
-
 def allowed_file(filename):
-    """Check if a file is allowed for upload."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
-@app.errorhandler(400)
-def handle_400_error(e):
-    return jsonify({"error": "Bad Request"}), 400
+# ---------- SERVE UPLOADED IMAGES ---------- #
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-@app.errorhandler(401)
-def handle_401_error(e):
-    return jsonify({"error": "Unauthorized"}), 401
+# ---------- CREATE REPORT ROUTES ---------- #
+@app.route('/redflags', methods=['POST'])
+@jwt_required()
+def create_redflag():
+    try:
+        current_user = get_jwt_identity()
+        user_id = current_user.get("id")
 
-@app.errorhandler(403)
-def handle_403_error(e):
-    return jsonify({"error": "Forbidden"}), 403
+        title = request.form.get('title')
+        description = request.form.get('description')
+        location = request.form.get('location')
+        image = request.files.get('image')
 
-@app.errorhandler(404)
-def handle_404_error(e):
-    return jsonify({"error": "Not Found"}), 404
+        if not title or not description or not location:
+            return jsonify({"error": "Title, description, and location are required"}), 400
 
-@app.errorhandler(500)
-def handle_500_error(e):
-    return jsonify({"error": "Internal Server Error"}), 500
+        filename = None
+        if image:
+            if allowed_file(image.filename):
+                filename = secure_filename(image.filename)
+                image.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            else:
+                return jsonify({"error": "Invalid file type. Allowed: png, jpg, jpeg, gif"}), 400
 
-# ---------- AUTH ROUTES ---------- #
+        new_redflag = RedFlag(
+            title=title,
+            description=description,
+            location=location,
+            image_url=filename,  # Ensure consistency with your model
+            user_id=user_id
+        )
 
-@app.route('/signup', methods=['POST'])
-def signup():
-    """Register a new user"""
-    data = request.json
-    first_name = data.get('first_name')
-    last_name = data.get('last_name')
-    email = data.get('email')
-    password = data.get('password')
+        db.session.add(new_redflag)
+        db.session.commit()
+        return jsonify(redflag_schema.dump(new_redflag)), 201
+    except Exception as e:
+        return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
 
-    if not first_name or not last_name or not email or not password:
-        return jsonify({"error": "All fields are required"}), 400
+@app.route('/interventions', methods=['POST'])
+@jwt_required()
+def create_intervention():
+    try:
+        current_user = get_jwt_identity()
+        user_id = current_user.get("id")
 
-    existing_user = User.query.filter_by(email=email).first()
-    if existing_user:
-        return jsonify({"error": "Email is already registered"}), 400
+        title = request.form.get('title')
+        description = request.form.get('description')
+        location = request.form.get('location')
+        image = request.files.get('image')
 
-    hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-    new_user = User(first_name=first_name, last_name=last_name, email=email, password_hash=hashed_password)
-    
-    db.session.add(new_user)
+        if not title or not description or not location:
+            return jsonify({"error": "Title, description, and location are required"}), 400
+
+        filename = None
+        if image:
+            if allowed_file(image.filename):
+                filename = secure_filename(image.filename)
+                image.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            else:
+                return jsonify({"error": "Invalid file type. Allowed: png, jpg, jpeg, gif"}), 400
+
+        new_intervention = Intervention(
+            title=title,
+            description=description,
+            location=location,
+            image_url=filename,  # Ensure consistency with your model
+            user_id=user_id
+        )
+
+        db.session.add(new_intervention)
+        db.session.commit()
+        return jsonify(intervention_schema.dump(new_intervention)), 201
+    except Exception as e:
+        return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
+
+# ---------- DELETE ROUTES ---------- #
+@app.route('/redflags/<int:id>', methods=['DELETE'])
+@jwt_required()
+def delete_redflag(id):
+    current_user = get_jwt_identity()
+    user_id = current_user.get("id")
+
+    redflag = RedFlag.query.filter_by(id=id, user_id=user_id).first()
+    if not redflag:
+        return jsonify({"error": "Red flag not found or unauthorized"}), 404
+
+    db.session.delete(redflag)
     db.session.commit()
-    
-    token = create_access_token(identity={"id": new_user.id, "email": new_user.email})
-    
-    return jsonify({
-        "message": "User registered successfully!",
-        "token": token,
-        "user": {
-            "id": new_user.id,
-            "first_name": new_user.first_name,
-            "last_name": new_user.last_name,
-            "email": new_user.email
-        }
-    }), 201
+    return jsonify({"message": "Red flag deleted successfully", "id": id}), 200
+
+@app.route('/interventions/<int:id>', methods=['DELETE'])
+@jwt_required()
+def delete_intervention(id):
+    current_user = get_jwt_identity()
+    user_id = current_user.get("id")
+
+    intervention = Intervention.query.filter_by(id=id, user_id=user_id).first()
+    if not intervention:
+        return jsonify({"error": "Intervention not found or unauthorized"}), 404
+
+    db.session.delete(intervention)
+    db.session.commit()
+    return jsonify({"message": "Intervention deleted successfully", "id": id}), 200
+
+# ---------- FETCH REPORTS ROUTES ---------- #
+@app.route('/redflags', methods=['GET'])
+@jwt_required()
+def get_redflags():
+    current_user = get_jwt_identity()
+    user_id = current_user.get("id")
+
+    redflags = RedFlag.query.filter_by(user_id=user_id).all()
+    return jsonify(redflags_schema.dump(redflags)), 200
+
+@app.route('/interventions', methods=['GET'])
+@jwt_required()
+def get_interventions():
+    current_user = get_jwt_identity()
+    user_id = current_user.get("id")
+
+    interventions = Intervention.query.filter_by(user_id=user_id).all()
+    return jsonify(interventions_schema.dump(interventions)), 200
+
+# ---------- LOGIN ROUTE ---------- #
 @app.route('/login', methods=['POST'])
 def login():
-    """Log in a user and return JWT token."""
     try:
         data = request.json
-        email = data.get('email')
-        password = data.get('password')
-
+        email, password = data.get('email'), data.get('password')
+        
         if not email or not password:
             return jsonify({"error": "Email and password are required"}), 400
 
@@ -112,126 +179,66 @@ def login():
             return jsonify({"error": "Invalid credentials"}), 401
 
         token = create_access_token(identity={"id": user.id, "role": "admin" if user.is_admin else "user"})
+        return jsonify({"message": "Login successful", "token": token, "role": "admin" if user.is_admin else "user", "user": user_schema.dump(user)}), 200
+    except Exception as e:
+        return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
+    
+    
+# ---------- SIGNUP ROUTE ---------- #
+@app.route('/signup', methods=['POST'])
+def signup():
+    try:
+        data = request.json
+        first_name = data.get('first_name')
+        last_name = data.get('last_name')
+        email = data.get('email')
+        password = data.get('password')
+        confirm_password = data.get('confirm_password')  # Fixed key name
+
+        # Validate all fields
+        if not all([first_name, last_name, email, password, confirm_password]):
+            return jsonify({"error": "All fields are required"}), 400
+
+        # Validate password match
+        if password != confirm_password:
+            return jsonify({"error": "Passwords do not match"}), 400
+
+        # Check if email already exists
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            return jsonify({"error": "Email already in use"}), 400
+
+        # Hash password
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+
+        # Create new user (Do NOT store plain password or confirm_password)
+        new_user = User(
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            password_hash=hashed_password  # Use hashed password
+        )
+
+        db.session.add(new_user)
+        db.session.commit()
+
+        # Generate access token
+        token = create_access_token(identity={"id": new_user.id, "role": "user"})
 
         return jsonify({
-            "message": "Login successful",
+            "message": "Sign-up successful",
             "token": token,
-            "role": "admin" if user.is_admin else "user",
-            "user": user_schema.dump(user)
-        }), 200
+            "user": user_schema.dump(new_user)
+        }), 201
 
     except Exception as e:
         return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
 
-# ---------- RED FLAG CRUD ROUTES ---------- #
-
-@app.route('/redflags', methods=['POST'])
-@jwt_required()
-def create_redflag():
-    """Create a new red flag with optional image upload."""
-    try:
-        current_user = get_jwt_identity()
-        title = request.form.get('title') or request.json.get('title')
-        description = request.form.get('description') or request.json.get('description')
-        location = request.form.get('location') or request.json.get('location', 'Unknown')
-        image_url = None
-
-        if not title or not description:
-            return jsonify({"error": "Title and description are required"}), 400
-
-        if 'image' in request.files:
-            image = request.files['image']
-            if allowed_file(image.filename):
-                filename = secure_filename(image.filename)
-                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                image.save(filepath)
-                image_url = f"/uploads/{filename}"
-            else:
-                return jsonify({"error": "Invalid file type"}), 400
-
-        redflag = RedFlag(
-            title=title,
-            description=description,
-            location=location,
-            image_url=image_url,
-            user_id=current_user['id']
-        )
-
-        db.session.add(redflag)
-        db.session.commit()
-        return jsonify({"message": "Red flag created", "redflag": redflag_schema.dump(redflag)}), 201
-    except Exception as e:
-        return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
-
-@app.route('/redflags', methods=['GET'])
-@jwt_required()
-def get_redflags():
-    """Get all red flags created by the logged-in user."""
-    try:
-        current_user = get_jwt_identity()
-        redflags = RedFlag.query.filter_by(user_id=current_user['id']).all()
-        return jsonify(redflags_schema.dump(redflags)), 200
-    except Exception as e:
-        return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
-
-# ---------- INTERVENTION CRUD ROUTES ---------- #
-
-@app.route('/interventions', methods=['POST'])
-@jwt_required()
-def create_intervention():
-    """Create an intervention record."""
-    try:
-        current_user = get_jwt_identity()
-        title = request.form.get('title') or request.json.get('title')
-        description = request.form.get('description') or request.json.get('description')
-        location = request.form.get('location') or request.json.get('location', 'Unknown')
-        image_url = None
-
-        if not title or not description:
-            return jsonify({"error": "Title and description are required"}), 400
-
-        if 'image' in request.files:
-            image = request.files['image']
-            if allowed_file(image.filename):
-                filename = secure_filename(image.filename)
-                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                image.save(filepath)
-                image_url = f"/uploads/{filename}"
-            else:
-                return jsonify({"error": "Invalid file type"}), 400
-
-        intervention = Intervention(
-            title=title,
-            description=description,
-            location=location,
-            image_url=image_url,
-            user_id=current_user['id']
-        )
-
-        db.session.add(intervention)
-        db.session.commit()
-        return jsonify({"message": "Intervention created", "intervention": intervention_schema.dump(intervention)}), 201
-    except Exception as e:
-        return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
-
-@app.route('/interventions', methods=['GET'])
-@jwt_required()
-def get_interventions():
-    """Get all interventions created by the logged-in user."""
-    try:
-        current_user = get_jwt_identity()
-        interventions = Intervention.query.filter_by(user_id=current_user['id']).all()
-        return jsonify(interventions_schema.dump(interventions)), 200
-    except Exception as e:
-        return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
-
-# ---------- FILE UPLOAD ROUTE ---------- #
-
-@app.route('/uploads/<filename>')
-def uploaded_file(filename):
-    """Serve uploaded images."""
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 # ---------- RUN APP ---------- #
 if __name__ == '__main__':
     app.run(debug=True)
+
+
+
+

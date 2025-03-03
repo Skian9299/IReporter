@@ -16,6 +16,7 @@ class RedFlagSchema(Schema):
     description = fields.Str(required=True)
     location = fields.Str(required=True)
     status = fields.Str(dump_only=True)
+    image_url = fields.Str(dump_only=True)  # ✅ Added image_url
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
     user_id = fields.Int(required=True)
@@ -27,6 +28,7 @@ class InterventionSchema(Schema):
     description = fields.Str(required=True)
     location = fields.Str(required=True)
     status = fields.Str(dump_only=True)
+    image_url = fields.Str(dump_only=True)  # ✅ Added image_url
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
     user_id = fields.Int(required=True)
