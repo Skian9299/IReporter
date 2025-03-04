@@ -1,34 +1,48 @@
-from flask import Flask, jsonify
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
-from flask_migrate import Migrate
-from config import Config
-from database import db, bcrypt
-from models import User, RedFlag, Intervention
+import os
+from dotenv import load_dotenv
+from models import db
+from routes import register_routes
 
+# Load environment variables
+load_dotenv()
+
+# Initialize Flask app
 app = Flask(__name__)
-app.config.from_object(Config)
 
-# Enable CORS globally for all domains
-CORS(app)
+# ---------- CONFIGURATION ---------- #
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///database.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'supersecretkey')
+app.config['UPLOAD_FOLDER'] = os.path.abspath('uploads')
+app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif'}
+app.config['DEBUG'] = True  # Enable debug mode
 
-# Restrict CORS to only allow requests from frontend
-CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)
+# Ensure upload folder exists
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
+# ---------- INITIALIZE EXTENSIONS ---------- #
 db.init_app(app)
-bcrypt.init_app(app)
-jwt = JWTManager(app)
 migrate = Migrate(app, db)
+bcrypt = Bcrypt(app)
+jwt = JWTManager(app)
 
-# Import and register routes
-from routes import auth_routes, report_routes, admin_routes
-app.register_blueprint(auth_routes, url_prefix="/api/auth")
-app.register_blueprint(report_routes, url_prefix="/api/reports")
-app.register_blueprint(admin_routes, url_prefix="/api/admin")
+# Proper CORS Configuration
+CORS(app, resources={r"/*": {
+    "origins": "http://localhost:3000",
+    "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    "allow_headers": ["Content-Type", "Authorization"],
+}}, supports_credentials=True)
 
-@app.route("/")
-def home():
-    return jsonify({"message": "Welcome to the iReporter API"}), 200
+# Register routes
+register_routes(app)
 
-if __name__== "__main__":
+# ---------- RUN APP ---------- #
+if __name__ == '__main__':
+    print("🔥 Flask server is running in DEBUG mode...")
     app.run(debug=True)

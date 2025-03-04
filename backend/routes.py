@@ -1,159 +1,185 @@
-from flask import Blueprint, request, jsonify
-from models import User, RedFlag, Intervention, db
-from database import bcrypt
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-from flask_cors import cross_origin
+from flask import request, jsonify, send_from_directory
+from flask_jwt_extended import jwt_required, create_access_token, get_jwt_identity
+from flask_bcrypt import Bcrypt
+from werkzeug.utils import secure_filename
+import traceback
+import os
+from models import db, User, RedFlag, Intervention
+from serializers import user_schema, redflag_schema, redflags_schema, intervention_schema, interventions_schema
 
-auth_routes = Blueprint("auth_routes", __name__)
-report_routes = Blueprint("report_routes", __name__)
-admin_routes = Blueprint("admin_routes", __name__)
+bcrypt = Bcrypt()
 
-ADMIN_EMAIL = "kamalabdi042@gmail.com"
+def register_routes(app):
+    # ---------- HELPER FUNCTIONS ---------- #
+    def allowed_file(filename):
+        return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
-# ==============================
-# 🚀 USER AUTHENTICATION ROUTES
-# ==============================
+    # ---------- HANDLE CORS PRE-FLIGHT REQUESTS ---------- #
+    @app.before_request
+    def handle_preflight():
+        if request.method == "OPTIONS":
+            return jsonify({"message": "CORS preflight passed"}), 200
 
-# ✅ User Signup
-@auth_routes.route("/signup", methods=["POST"])
-@cross_origin(origins="http://localhost:3000", supports_credentials=True)
-def signup():
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify({"error": "Invalid request. No data provided"}), 400
+    # ---------- CREATE REPORT ROUTES ---------- #
+    @app.route('/redflags', methods=['POST'])
+    @jwt_required()
+    def create_redflag():
+        try:
+            current_user = get_jwt_identity()
+            user_id = current_user.get("id")
 
-        first_name, last_name, email, password = map(str.strip, [
-            data.get("first_name", ""), data.get("last_name", ""),
-            data.get("email", ""), data.get("password", "")
-        ])
+            # Handle JSON or FormData
+            if request.is_json:
+                data = request.json
+                title, description, location = data.get('title'), data.get('description'), data.get('location')
+                image = None  # No image in JSON mode
+            else:
+                title, description, location = request.form.get('title'), request.form.get('description'), request.form.get('location')
+                image = request.files.get('image')
 
-        if not all([first_name, last_name, email, password]):
-            return jsonify({"error": "All fields are required"}), 400
+            if not title or not description or not location:
+                return jsonify({"error": "Title, description, and location are required"}), 400
 
-        if User.query.filter_by(email=email).first():
-            return jsonify({"error": "Email already exists"}), 400
+            filename = None
+            if image and allowed_file(image.filename):
+                filename = secure_filename(image.filename)
+                image.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            elif image:
+                return jsonify({"error": "Invalid file type. Allowed: png, jpg, jpeg, gif"}), 400
 
-        hashed_password = bcrypt.generate_password_hash(password).decode("utf-8")
+            new_redflag = RedFlag(title=title, description=description, location=location, image_url=filename, user_id=user_id)
+            db.session.add(new_redflag)
+            db.session.commit()
+            return jsonify(redflag_schema.dump(new_redflag)), 201
+        except Exception as e:
+            traceback.print_exc()
+            return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
 
-        new_user = User(first_name=first_name, last_name=last_name, email=email, password=hashed_password)
-        db.session.add(new_user)
-        db.session.commit()
+    @app.route('/interventions', methods=['POST'])
+    @jwt_required()
+    def create_intervention():
+        try:
+            current_user = get_jwt_identity()
+            user_id = current_user.get("id")
 
-        return jsonify({"message": "User registered successfully"}), 201
+            if request.is_json:
+                data = request.json
+                title, description, location = data.get('title'), data.get('description'), data.get('location')
+                image = None
+            else:
+                title, description, location = request.form.get('title'), request.form.get('description'), request.form.get('location')
+                image = request.files.get('image')
 
-    except Exception as e:
-        print(f"Signup error: {e}")
-        return jsonify({"error": "Internal server error"}), 500
+            if not title or not description or not location:
+                return jsonify({"error": "Title, description, and location are required"}), 400
 
+            filename = None
+            if image and allowed_file(image.filename):
+                filename = secure_filename(image.filename)
+                image.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            elif image:
+                return jsonify({"error": "Invalid file type. Allowed: png, jpg, jpeg, gif"}), 400
 
-# ✅ User Login
-@auth_routes.route("/login", methods=["POST"])
-@cross_origin(origins="http://localhost:3000", supports_credentials=True)
-def login():
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify({"error": "Invalid request. No data provided"}), 400
+            new_intervention = Intervention(title=title, description=description, location=location, image_url=filename, user_id=user_id)
+            db.session.add(new_intervention)
+            db.session.commit()
+            return jsonify(intervention_schema.dump(new_intervention)), 201
+        except Exception as e:
+            traceback.print_exc()
+            return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
 
-        email, password = map(str.strip, [data.get("email", ""), data.get("password", "")])
-        if not email or not password:
-            return jsonify({"error": "Email and password are required"}), 400
-
-        user = User.query.filter_by(email=email).first()
-        if not user or not bcrypt.check_password_hash(user.password, password):
-            return jsonify({"error": "Invalid email or password"}), 401
-
-        role = "admin" if email == ADMIN_EMAIL else "user"
-        access_token = create_access_token(identity={"id": user.id, "email": user.email})
-
-        return jsonify({
-            "token": access_token, "role": role,
-            "user": {"id": user.id, "first_name": user.first_name, "last_name": user.last_name, "email": user.email},
-            "redirect": "/admin-dashboard" if role == "admin" else "/dashboard"
-        }), 200
-
-    except Exception as e:
-        print(f"Login error: {e}")
-        return jsonify({"error": "Internal server error"}), 500
-
-
-# ==============================
-# 🚀 RED FLAG REPORT ROUTES
-# ==============================
-
-# ✅ Create RedFlag Report
-@report_routes.route("/redflags", methods=["POST"])
-@cross_origin(origins="http://localhost:3000", supports_credentials=True)
-@jwt_required()
-def create_redflag():
-    try:
-        user_id = get_jwt_identity().get("id")
-        data = request.get_json()
-
-        if not all([data.get("title"), data.get("description"), data.get("location")]):
-            return jsonify({"error": "All fields are required"}), 400
-
-        new_redflag = RedFlag(title=data["title"], description=data["description"], location=data["location"], user_id=user_id)
-        db.session.add(new_redflag)
-        db.session.commit()
-
-        return jsonify({"message": "RedFlag created successfully"}), 201
-
-    except Exception as e:
-        print(f"RedFlag error: {e}")
-        return jsonify({"error": "Internal server error"}), 500
-
-
-# ==============================
-# 🚀 ADMIN ROUTES
-# ==============================
-
-# ✅ Get All Reports (Admin)
-@admin_routes.route("/all-reports", methods=["GET"])
-@cross_origin(origins="http://localhost:3000", supports_credentials=True)
-@jwt_required()
-def get_all_reports():
-    try:
+    # ---------- DELETE REPORT ROUTES ---------- #
+    @app.route('/redflags/<int:id>', methods=['DELETE'])
+    @jwt_required()
+    def delete_redflag(id):
         current_user = get_jwt_identity()
-        if current_user["email"] != ADMIN_EMAIL:
-            return jsonify({"error": "Unauthorized"}), 403
+        user_id = current_user.get("id")
 
-        redflags = RedFlag.query.all()
-        interventions = Intervention.query.all()
+        redflag = RedFlag.query.filter_by(id=id, user_id=user_id).first()
+        if not redflag:
+            return jsonify({"error": "Red flag not found or unauthorized"}), 404
 
-        reports = {
-            "redflags": [{"id": r.id, "title": r.title, "description": r.description, "status": r.status.value} for r in redflags],
-            "interventions": [{"id": i.id, "title": i.title, "description": i.description, "status": i.status.value} for i in interventions]
-        }
+        db.session.delete(redflag)
+        db.session.commit()
+        return jsonify({"message": "Red flag deleted successfully", "id": id}), 200
 
-        return jsonify(reports), 200
+    @app.route('/interventions/<int:id>', methods=['DELETE'])
+    @jwt_required()
+    def delete_intervention(id):
+        current_user = get_jwt_identity()
+        user_id = current_user.get("id")
 
-    except Exception as e:
-        print(f"Admin fetch reports error: {e}")
-        return jsonify({"error": "Internal server error"}), 500
-    
+        intervention = Intervention.query.filter_by(id=id, user_id=user_id).first()
+        if not intervention:
+            return jsonify({"error": "Intervention not found or unauthorized"}), 404
 
-# ✅ Admin Login (Fix)
-@admin_routes.route("/login", methods=["POST", "OPTIONS"])
-@cross_origin(origins="http://localhost:3000", supports_credentials=True)
-def admin_login():
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify({"error": "Invalid request. No data provided"}), 400
+        db.session.delete(intervention)
+        db.session.commit()
+        return jsonify({"message": "Intervention deleted successfully", "id": id}), 200
 
-        email, password = map(str.strip, [data.get("email", ""), data.get("password", "")])
-        if email != ADMIN_EMAIL:
-            return jsonify({"error": "Unauthorized access"}), 401
+    # ---------- FETCH REPORTS ROUTES ---------- #
+    @app.route('/redflags', methods=['GET'])
+    @jwt_required()
+    def get_redflags():
+        current_user = get_jwt_identity()
+        user_id = current_user.get("id")
 
-        user = User.query.filter_by(email=email).first()
-        if not user or not bcrypt.check_password_hash(user.password, password):
-            return jsonify({"error": "Invalid email or password"}), 401
+        redflags = RedFlag.query.filter_by(user_id=user_id).all()
+        return jsonify(redflags_schema.dump(redflags)), 200
 
-        access_token = create_access_token(identity={"id": user.id, "email": user.email})
-        return jsonify({"token": access_token, "role": "admin"}), 200
+    @app.route('/interventions', methods=['GET'])
+    @jwt_required()
+    def get_interventions():
+        current_user = get_jwt_identity()
+        user_id = current_user.get("id")
 
-    except Exception as e:
-        print(f"Admin login error: {e}")
-        return jsonify({"error": "Internal server error"}), 500
+        interventions = Intervention.query.filter_by(user_id=user_id).all()
+        return jsonify(interventions_schema.dump(interventions)), 200
+
+    # ---------- AUTHENTICATION ROUTES ---------- #
+    @app.route('/signup', methods=['POST'])
+    def signup():
+        try:
+            data = request.json
+            first_name, last_name, email, password, confirm_password = data.get('first_name'), data.get('last_name'), data.get('email'), data.get('password'), data.get('confirm_password')
+
+            if not all([first_name, last_name, email, password, confirm_password]):
+                return jsonify({"error": "All fields are required"}), 400
+
+            if password != confirm_password:
+                return jsonify({"error": "Passwords do not match"}), 400
+
+            existing_user = User.query.filter_by(email=email).first()
+            if existing_user:
+                return jsonify({"error": "Email already in use"}), 400
+
+            hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+
+            new_user = User(first_name=first_name, last_name=last_name, email=email, password_hash=hashed_password)
+            db.session.add(new_user)
+            db.session.commit()
+
+            token = create_access_token(identity={"id": new_user.id, "role": "user"})
+            return jsonify({"message": "Sign-up successful", "token": token, "user": user_schema.dump(new_user)}), 201
+        except Exception as e:
+            traceback.print_exc()
+            return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
+
+    @app.route('/login', methods=['POST'])
+    def login():
+        try:
+            data = request.json
+            email, password = data.get('email'), data.get('password')
+
+            if not email or not password:
+                return jsonify({"error": "Email and password are required"}), 400
+
+            user = User.query.filter_by(email=email).first()
+            if not user or not bcrypt.check_password_hash(user.password_hash, password):
+                return jsonify({"error": "Invalid email or password"}), 401
+
+            token = create_access_token(identity={"id": user.id, "role": "user"})
+            return jsonify({"message": "Login successful", "token": token, "user": user_schema.dump(user)}), 200
+        except Exception as e:
+            traceback.print_exc()
+            return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
