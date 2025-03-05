@@ -14,6 +14,11 @@ def register_routes(app):
     # ---------- HELPER FUNCTIONS ---------- #
     def allowed_file(filename):
         return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
+    
+   # Serve uploaded files
+    @app.route('/uploads/<filename>')
+    def uploaded_file(filename):
+        return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
     # ---------- HANDLE CORS PRE-FLIGHT REQUESTS ---------- #
     @app.before_request
