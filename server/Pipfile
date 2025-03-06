@@ -8,6 +8,9 @@ flask = "*"
 flask-migrate = "*"
 flask-sqlalchemy = "*"
 sqlalchemy-serializer = "*"
+flask-cors = "*"
+python-dotenv = "*"
+pyjwt = "*"
 
 [dev-packages]
 

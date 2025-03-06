@@ -1,14 +1,14 @@
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy_serializer import SerializerMixin
-from sqlalchemy import Enum
+from sqlalchemy import Enum as SQLEnum
+import enum 
 
 # Initialize database
-
 db = SQLAlchemy()
 
-# Define status options for reports
-class Status(Enum):
+# Define status options for reports using Python's Enum
+class Status(enum.Enum):  # Use enum.Enum, not sqlalchemy.Enum
     DRAFT = "Draft"
     UNDER_INVESTIGATION = "Under Investigation"
     RESOLVED = "Resolved"
@@ -23,7 +23,9 @@ class RedFlag(db.Model, SerializerMixin):
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=False)
     location = db.Column(db.String(255), nullable=False)
-    status = db.Column(db.Enum(Status), default=Status.DRAFT, nullable=False)
+    latitude = db.Column(db.Float)
+    longitude = db.Column(db.Float)
+    status = db.Column(SQLEnum(Status), default=Status.DRAFT, nullable=False)  # Fix Enum usage
     image_url = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -37,8 +39,10 @@ class Intervention(db.Model, SerializerMixin):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=False)
+    latitude = db.Column(db.Float)
+    longitude = db.Column(db.Float)
     location = db.Column(db.String(255), nullable=False)
-    status = db.Column(db.Enum(Status), default=Status.DRAFT, nullable=False)
+    status = db.Column(SQLEnum(Status), default=Status.DRAFT, nullable=False)  # Fix Enum usage
     image_url = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
