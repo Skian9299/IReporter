@@ -1,12 +1,13 @@
 from functools import wraps
 import os
 from flask import Flask, jsonify, request, send_from_directory
-import jwt
 from werkzeug.utils import secure_filename
 from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
-from models import Intervention, RedFlag
+from auth import auth_bp, blacklist
+from flask_jwt_extended import JWTManager
+from models import db, Intervention, RedFlag
 
 
 
@@ -24,9 +25,18 @@ if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
 
 # Initialize extensions
-db = SQLAlchemy(app)
+db.init_app(app)
 migrate = Migrate(app, db)
-CORS(app)
+CORS(app, supports_credentials=True, origins=["http://localhost:3000"])
+jwt = JWTManager(app)
+
+@jwt.token_in_blocklist_loader
+def check_if_token_revoked(jwt_header, jwt_payload):
+    jti = jwt_payload["jti"]
+    return jti in blacklist
+
+# Register the authentication blueprint
+app.register_blueprint(auth_bp, url_prefix='/auth')
 
 
 # Auth decorator

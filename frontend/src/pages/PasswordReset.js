@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./PasswordReset.css";
 
 const PasswordReset = () => {
@@ -7,6 +8,7 @@ const PasswordReset = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -17,18 +19,26 @@ const PasswordReset = () => {
     }
 
     try {
-      const response = await fetch("http://127.0.0.1:5000/reset-password", {
+      const response = await fetch("http://127.0.0.1:5000/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ 
+          email, 
+          new_password: password, 
+          confirm_password: confirmPassword 
+        }),
       });
 
       const data = await response.json();
       if (response.ok) {
-        setSuccess("Password changed successfully!");
+        setSuccess(data.message || "Password changed successfully!");
         setError("");
+        // Redirect to login page after 2 seconds
+        setTimeout(() => {
+          navigate("/login");
+        }, 2000);
       } else {
-        setError(data.message || "Something went wrong.");
+        setError(data.error || data.message || "Something went wrong.");
       }
     } catch (error) {
       setError("Failed to reset password. Please try again.");

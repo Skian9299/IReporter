@@ -9,6 +9,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [protectedData, setProtectedData] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,31 +25,38 @@ const Login = () => {
 
     try {
       const response = await axios.post(
-        "http://127.0.0.1:5000/login",
+        "http://127.0.0.1:5000/auth/login",
         { email, password },
-        { withCredentials: true } // Include credentials
+        { withCredentials: true }
       );
 
       if (response.status === 200) {
-        const { token, role, user } = response.data;
+        // Destructure access_token instead of token
+        const { access_token, role, user } = response.data;
 
-        if (!token) {
+        if (!access_token) {
           setError("Login failed: No token received.");
           return;
         }
 
+        // Log the role for debugging
+        console.log("Role from server:", role);
+
         // Store user info in localStorage
-        localStorage.setItem("token", token);
+        localStorage.setItem("token", access_token);
         localStorage.setItem("role", role);
         localStorage.setItem("user", JSON.stringify(user));
 
         console.log("User logged in:", user);
 
-        // Redirect based on role
-        if (role === "admin") {
-          navigate("/admindashboard"); // Redirect to admin dashboard
+        // Optionally fetch protected data immediately after login
+        fetchProtectedData(access_token);
+
+        // Normalize role before checking
+        if (role && role.trim().toLowerCase() === "admin") {
+          navigate("/admindashboard");
         } else {
-          navigate("/dashboard"); // Redirect to user dashboard
+          navigate("/dashboard");
         }
       }
     } catch (err) {
@@ -59,11 +67,25 @@ const Login = () => {
     }
   };
 
+  // Function to fetch protected data using the token
+  const fetchProtectedData = async (token) => {
+    try {
+      const response = await axios.get("http://127.0.0.1:5000/protected-endpoint", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      console.log("Protected data:", response.data);
+      setProtectedData(response.data);
+    } catch (error) {
+      console.error("Error fetching protected data:", error.response?.data || error.message);
+    }
+  };
+
   return (
     <div className="login-container">
       <div className="login-form">
         <h2 className="title">👁️ Reporter</h2>
-
         <form onSubmit={handleLogin}>
           <div className="input-group">
             <input
@@ -74,7 +96,6 @@ const Login = () => {
               required
             />
           </div>
-
           <div className="password-field">
             <input
               type={showPassword ? "text" : "password"}
@@ -91,31 +112,34 @@ const Login = () => {
               {showPassword ? "👁️" : "🙈"}
             </span>
           </div>
-
           {error && <p className="error-text">{error}</p>}
-
           <button type="submit" className="login-btn" disabled={loading}>
             {loading ? "Logging in..." : "Login"}
           </button>
         </form>
-
         <p className="forgot-password">
           <Link to="/forgot-password">Forgot Password?</Link>
         </p>
-
         <p className="or-text">OR</p>
-
         <p className="signup-link">
           <Link to="/signup">Sign Up</Link>
         </p>
       </div>
-
       <div className="login-info">
         <h2 className="hero-text">
           Let’s build the Nation <span className="bold-text">together</span>
         </h2>
-        <p>👁️ <span className="highlight">Reporter</span> is a platform for every citizen.</p>
+        <p>
+          👁️ <span className="highlight">Reporter</span> is a platform for every citizen.
+        </p>
       </div>
+      {/* Optionally display protected data if available */}
+      {protectedData && (
+        <div className="protected-data">
+          <h3>Protected Data</h3>
+          <pre>{JSON.stringify(protectedData, null, 2)}</pre>
+        </div>
+      )}
     </div>
   );
 };
