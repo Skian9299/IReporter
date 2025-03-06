@@ -135,7 +135,26 @@ const AllReports = () => {
               <div className="report-content">
                 <h3>{report.title}</h3>
                 <p>{report.description}</p>
-                {report.image && <img src={`http://localhost:5000/uploads/${report.image}`} alt="Report" className="report-image" />}
+                <p><strong>Location:</strong> {report.location}</p>
+                <p><strong>Latitude:</strong> {report.latitude}</p>
+                <p><strong>Longitude:</strong> {report.longitude}</p>
+                <p><strong>Status:</strong> {report.status}</p>
+                <p><strong>Created At:</strong> {new Date(report.created_at).toLocaleString()}</p>
+                <p><strong>Updated At:</strong> {new Date(report.updated_at).toLocaleString()}</p>
+                {report.image_url && (
+                  <img
+                    src={`http://localhost:5000/uploads/${report.image_url}`}
+                    alt="Report"
+                    className="report-image"
+                  />
+                )}
+                {report.video_url && (
+                  <video
+                    src={`http://localhost:5000/uploads/${report.video_url}`}
+                    controls
+                    className="report-video"
+                  />
+                )}
               </div>
               <div className="report-actions">
                 <button onClick={() => handleEdit(report)}>Edit</button>

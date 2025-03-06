@@ -1,11 +1,10 @@
-
 .dashboard-container {
   padding: 20px;
   font-family: Arial, sans-serif;
-  margin-top: 80px; 
+  margin-top: 80px; /* Space for the fixed header */
 }
 
-
+/* HEADER SECTION */
 .dashboard-header {
   display: flex;
   justify-content: space-between;
@@ -22,7 +21,6 @@
   z-index: 1000;
 }
 
-
 .user-info {
   display: flex;
   align-items: center;
@@ -38,17 +36,14 @@
   object-fit: cover;
 }
 
-
 input[type="file"] {
   display: none;
 }
-
 
 .username {
   font-weight: bold;
   font-size: 16px;
 }
-
 
 .dashboard-buttons button {
   margin: 0 8px;
@@ -75,7 +70,6 @@ input[type="file"] {
   color: white;
 }
 
-
 .dashboard-buttons button:hover {
   opacity: 0.8;
 }
@@ -84,7 +78,7 @@ input[type="file"] {
   transform: scale(0.95);
 }
 
-
+/* REPORT SECTIONS */
 .report-sections {
   display: flex;
   justify-content: space-between;
@@ -92,7 +86,6 @@ input[type="file"] {
   gap: 20px;
   flex-wrap: wrap;
 }
-
 
 .report-box {
   flex: 1;
@@ -117,7 +110,6 @@ input[type="file"] {
   color: white;
 }
 
-
 .report-box input,
 .report-box textarea {
   display: block;
@@ -130,12 +122,10 @@ input[type="file"] {
   background: white;
 }
 
-
 .report-box textarea {
   min-height: 150px;
   resize: none;
 }
-
 
 .report-actions {
   display: flex;
@@ -143,7 +133,6 @@ input[type="file"] {
   gap: 10px;
   margin-top: 10px;
 }
-
 
 .action-btn {
   background: #333;
@@ -163,18 +152,26 @@ input[type="file"] {
   background: #555;
 }
 
-
 .report-image {
-  width: 100%; 
+  width: 100%;
   max-width: 300px;
-  max-height: 180px; 
-  object-fit: cover; 
+  max-height: 180px;
+  object-fit: cover;
   border-radius: 6px;
   margin-top: 10px;
   border: 2px solid white;
   display: block;
 }
 
+.report-video {
+  width: 100%;
+  max-width: 300px;
+  max-height: 180px;
+  border-radius: 6px;
+  margin-top: 10px;
+  border: 2px solid white;
+  display: block;
+}
 
 .report-btn {
   width: 100%;
@@ -193,9 +190,15 @@ input[type="file"] {
   background: #444;
 }
 
+/* ERROR MESSAGE */
+.error-message {
+  color: red;
+  font-size: 14px;
+  text-align: center;
+  margin-top: 10px;
+}
 
-
-
+/* RESPONSIVE DESIGN */
 @media (max-width: 1024px) {
   .report-sections {
     flex-direction: column;
@@ -206,7 +209,6 @@ input[type="file"] {
     width: 100%;
   }
 }
-
 
 @media (max-width: 768px) {
   .dashboard-header {
@@ -226,9 +228,10 @@ input[type="file"] {
     width: 100%;
   }
 
-  .report-image {
+  .report-image,
+  .report-video {
     width: 100%;
     max-width: 250px;
     max-height: 160px;
   }
-}
+}         

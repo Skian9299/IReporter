@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import "./AdminDashboard.css";
+import { useNavigate } from "react-router-dom";
 
-const AdminDashboard = ({ onLogout }) => {
+const AdminDashboard = () => {
   const [reports, setReports] = useState([]);
   const [filteredReports, setFilteredReports] = useState([]);
   const [filterType, setFilterType] = useState("all");
   const [adminName, setAdminName] = useState("Admin");
   const [profilePic, setProfilePic] = useState(localStorage.getItem("adminAvatar") || "");
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchReports();
@@ -15,7 +17,11 @@ const AdminDashboard = ({ onLogout }) => {
 
   const fetchReports = async () => {
     try {
-      const response = await axios.get("/api/reports");
+      const response = await axios.get("http://127.0.0.1:5000/reports", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
       setReports(response.data);
       setFilteredReports(response.data);
     } catch (error) {
@@ -34,14 +40,30 @@ const AdminDashboard = ({ onLogout }) => {
 
   const updateStatus = async (reportId, status, userEmail) => {
     try {
-      await axios.patch(`/api/reports/${reportId}/status`, { status });
+      await axios.patch(
+        `http://127.0.0.1:5000/reports/${reportId}/status`,
+        { status },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
 
       // Send email notification
-      await axios.post("/api/send-email", {
-        to: userEmail,
-        subject: "Report Status Update",
-        message: `Your report has been marked as ${status}.`,
-      });
+      await axios.post(
+        "http://127.0.0.1:5000/send-email",
+        {
+          to: userEmail,
+          subject: "Report Status Update",
+          message: `Your report has been marked as ${status}.`,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
 
       fetchReports();
     } catch (error) {
@@ -61,6 +83,11 @@ const AdminDashboard = ({ onLogout }) => {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate("/login");
+  };
+
   return (
     <div className="admin-dashboard">
       {/* Sidebar */}
@@ -75,7 +102,7 @@ const AdminDashboard = ({ onLogout }) => {
         <button onClick={() => filterReports("all")}>All Reports</button>
         <button onClick={() => filterReports("Red Flag")}>Red Flags</button>
         <button onClick={() => filterReports("Intervention")}>Interventions</button>
-        <button onClick={onLogout} className="logout-btn">Log Out</button>
+        <button onClick={handleLogout} className="logout-btn">Log Out</button>
       </div>
 
       {/* Reports Table */}

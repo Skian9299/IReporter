@@ -13,7 +13,7 @@ const Login = () => {
 
   useEffect(() => {
     return () => {
-      setLoading(false); 
+      setLoading(false); // Cleanup loading state on unmount
     };
   }, []);
 
@@ -23,7 +23,11 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post("http://127.0.0.1:5000/login", { email, password });
+      const response = await axios.post(
+        "http://127.0.0.1:5000/login",
+        { email, password },
+        { withCredentials: true } // Include credentials
+      );
 
       if (response.status === 200) {
         const { token, role, user } = response.data;
@@ -40,8 +44,12 @@ const Login = () => {
 
         console.log("User logged in:", user);
 
-       
-        navigate(role === "admin" ? "/admin-dashboard" : "/dashboard");
+        // Redirect based on role
+        if (role === "admin") {
+          navigate("/admindashboard"); // Redirect to admin dashboard
+        } else {
+          navigate("/dashboard"); // Redirect to user dashboard
+        }
       }
     } catch (err) {
       console.error("Login error:", err);
@@ -75,7 +83,11 @@ const Login = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
-            <span className="toggle-password" onClick={() => setShowPassword(!showPassword)} role="button">
+            <span
+              className="toggle-password"
+              onClick={() => setShowPassword(!showPassword)}
+              role="button"
+            >
               {showPassword ? "👁️" : "🙈"}
             </span>
           </div>

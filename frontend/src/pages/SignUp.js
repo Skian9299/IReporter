@@ -9,6 +9,7 @@ const SignUp = () => {
     email: "",
     password: "",
     confirmPassword: "",
+    role: "user", // Default role is "user"
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -19,12 +20,14 @@ const SignUp = () => {
 
   // Handle input changes
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
 
-    if (e.target.name === "password" || e.target.name === "confirmPassword") {
+    // Validate passwords if either field changes
+    if (name === "password" || name === "confirmPassword") {
       validatePasswords(
-        e.target.name === "password" ? e.target.value : formData.password,
-        e.target.name === "confirmPassword" ? e.target.value : formData.confirmPassword
+        name === "password" ? value : formData.password,
+        name === "confirmPassword" ? value : formData.confirmPassword
       );
     }
   };
@@ -41,8 +44,16 @@ const SignUp = () => {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (error || formData.password === "" || formData.confirmPassword === "") {
+
+    // Check for empty fields
+    if (!formData.first_name || !formData.last_name || !formData.email || !formData.password || !formData.confirmPassword) {
       setError("Please fill all fields correctly.");
+      return;
+    }
+
+    // Check for password match
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match.");
       return;
     }
 
@@ -56,7 +67,8 @@ const SignUp = () => {
         last_name: formData.last_name,
         email: formData.email,
         password: formData.password,
-        confirm_password: formData.confirmPassword, // Backend expects this field
+        confirm_password: formData.confirmPassword,
+        role: formData.role, // Include role in the request
       });
 
       setSuccessMessage(response.data.message || "Sign-up successful! Please log in.");
@@ -66,6 +78,7 @@ const SignUp = () => {
         email: "",
         password: "",
         confirmPassword: "",
+        role: "user", // Reset role to "user"
       });
     } catch (err) {
       setError(err.response?.data?.error || "An error occurred. Please try again.");
@@ -142,10 +155,23 @@ const SignUp = () => {
             </span>
           </div>
 
+          <div className="role-select">
+            <label htmlFor="role">Role:</label>
+            <select
+              name="role"
+              value={formData.role}
+              onChange={handleChange}
+              required
+            >
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+
           {error && <p className="error-text">{error}</p>}
           {successMessage && <p className="success-text">{successMessage}</p>}
 
-          <button type="submit" className="signup-btn" disabled={error !== "" || loading}>
+          <button type="submit" className="signup-btn" disabled={loading}>
             {loading ? "Signing Up..." : "Sign Up"}
           </button>
 

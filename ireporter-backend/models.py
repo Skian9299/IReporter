@@ -16,6 +16,11 @@ class Status(Enum):
     REJECTED = 'Rejected'
     RESOLVED = 'Resolved'
 
+# Enums for user roles
+class UserRole(Enum):
+    USER = 'user'
+    ADMIN = 'admin'
+
 # Serializer Mixin
 class SerializerMixin:
     """Mixin for serializing SQLAlchemy models to dictionaries and JSON."""
@@ -43,7 +48,7 @@ class User(db.Model, UserMixin, SerializerMixin):
     last_name = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(512), nullable=False)
-    is_admin = db.Column(db.Boolean, default=False)
+    role = db.Column(db.Enum(UserRole), default=UserRole.USER, nullable=False)  # Role-based access control
     is_active = db.Column(db.Boolean, default=True, nullable=False)  # Required for Flask-Login
     
     # Relationships
@@ -63,6 +68,10 @@ class User(db.Model, UserMixin, SerializerMixin):
         """Return the user's ID as a string (required by Flask-Login)."""
         return str(self.id)
 
+    def is_admin(self):
+        """Check if the user has an admin role."""
+        return self.role == UserRole.ADMIN
+
 # RedFlag Model
 class RedFlag(db.Model, SerializerMixin):
     """Represents a red flag reported by a user."""
@@ -72,8 +81,11 @@ class RedFlag(db.Model, SerializerMixin):
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=False)
     location = db.Column(db.String(255), nullable=False)
-    status = db.Column(db.Enum(Status), default=Status.DRAFT, nullable=False)  # ✅ Fixed default value
-    image_url = db.Column(db.String(255), nullable=True)  # ✅ Correct field name
+    latitude = db.Column(db.Float, nullable=True)  # Latitude for geolocation
+    longitude = db.Column(db.Float, nullable=True)  # Longitude for geolocation
+    status = db.Column(db.Enum(Status), default=Status.DRAFT, nullable=False)
+    image_url = db.Column(db.String(255), nullable=True)  # URL for image
+    video_url = db.Column(db.String(255), nullable=True)  # URL for video
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -90,8 +102,11 @@ class Intervention(db.Model, SerializerMixin):
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=False)
     location = db.Column(db.String(255), nullable=False)
-    status = db.Column(db.Enum(Status), default=Status.DRAFT, nullable=False)  # ✅ Fixed default value
-    image_url = db.Column(db.String(255), nullable=True)  # ✅ Correct field name
+    latitude = db.Column(db.Float, nullable=True)  # Latitude for geolocation
+    longitude = db.Column(db.Float, nullable=True)  # Longitude for geolocation
+    status = db.Column(db.Enum(Status), default=Status.DRAFT, nullable=False)
+    image_url = db.Column(db.String(255), nullable=True)  # URL for image
+    video_url = db.Column(db.String(255), nullable=True)  # URL for video
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)

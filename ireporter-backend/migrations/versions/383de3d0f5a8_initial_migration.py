@@ -1,8 +1,8 @@
-"""Initial migration
+"""initial migration
 
-Revision ID: c56c932c98bb
+Revision ID: 383de3d0f5a8
 Revises: 
-Create Date: 2025-02-21 09:29:56.392294
+Create Date: 2025-03-04 19:57:03.179494
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'c56c932c98bb'
+revision = '383de3d0f5a8'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -23,8 +23,8 @@ def upgrade():
     sa.Column('first_name', sa.String(length=50), nullable=False),
     sa.Column('last_name', sa.String(length=50), nullable=False),
     sa.Column('email', sa.String(length=100), nullable=False),
-    sa.Column('password_hash', sa.String(length=128), nullable=False),
-    sa.Column('is_admin', sa.Boolean(), nullable=True),
+    sa.Column('password_hash', sa.String(length=512), nullable=False),
+    sa.Column('role', sa.Enum('USER', 'ADMIN', name='userrole'), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email')
@@ -34,7 +34,10 @@ def upgrade():
     sa.Column('title', sa.String(length=255), nullable=False),
     sa.Column('description', sa.Text(), nullable=False),
     sa.Column('location', sa.String(length=255), nullable=False),
+    sa.Column('latitude', sa.Float(), nullable=True),
+    sa.Column('longitude', sa.Float(), nullable=True),
     sa.Column('status', sa.Enum('DRAFT', 'UNDER_INVESTIGATION', 'REJECTED', 'RESOLVED', name='status'), nullable=False),
+    sa.Column('image_url', sa.String(length=255), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
     sa.Column('user_id', sa.Integer(), nullable=False),
@@ -54,7 +57,10 @@ def upgrade():
     sa.Column('title', sa.String(length=255), nullable=False),
     sa.Column('description', sa.Text(), nullable=False),
     sa.Column('location', sa.String(length=255), nullable=False),
+    sa.Column('latitude', sa.Float(), nullable=True),
+    sa.Column('longitude', sa.Float(), nullable=True),
     sa.Column('status', sa.Enum('DRAFT', 'UNDER_INVESTIGATION', 'REJECTED', 'RESOLVED', name='status'), nullable=False),
+    sa.Column('image_url', sa.String(length=255), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
     sa.Column('user_id', sa.Integer(), nullable=False),
