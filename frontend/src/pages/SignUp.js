@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./SignUp.css";
 
@@ -17,6 +18,7 @@ const SignUp = () => {
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   // Handle input changes
   const handleChange = (e) => {
@@ -46,7 +48,13 @@ const SignUp = () => {
     e.preventDefault();
 
     // Check for empty fields
-    if (!formData.first_name || !formData.last_name || !formData.email || !formData.password || !formData.confirmPassword) {
+    if (
+      !formData.first_name ||
+      !formData.last_name ||
+      !formData.email ||
+      !formData.password ||
+      !formData.confirmPassword
+    ) {
       setError("Please fill all fields correctly.");
       return;
     }
@@ -62,7 +70,7 @@ const SignUp = () => {
     setSuccessMessage("");
 
     try {
-      const response = await axios.post("http://127.0.0.1:5000/signup", {
+      const response = await axios.post("http://127.0.0.1:5000/auth/register", {
         first_name: formData.first_name,
         last_name: formData.last_name,
         email: formData.email,
@@ -71,6 +79,7 @@ const SignUp = () => {
         role: formData.role, // Include role in the request
       });
 
+      // Show success message and then navigate to login page
       setSuccessMessage(response.data.message || "Sign-up successful! Please log in.");
       setFormData({
         first_name: "",
@@ -80,6 +89,12 @@ const SignUp = () => {
         confirmPassword: "",
         role: "user", // Reset role to "user"
       });
+
+      // Redirect to the login page after a short delay
+      setTimeout(() => {
+        navigate("/login");
+      }, 1500);
+      
     } catch (err) {
       setError(err.response?.data?.error || "An error occurred. Please try again.");
     } finally {
@@ -177,7 +192,9 @@ const SignUp = () => {
 
           <p className="or-text">OR</p>
           <p className="or-text">Already have an account?</p>
-          <a href="/login" className="login-link">Login</a>
+          <a href="/login" className="login-link">
+            Login
+          </a>
         </form>
       </div>
 
@@ -185,7 +202,9 @@ const SignUp = () => {
         <h2 className="hero-text">
           Let’s build the Nation <span className="bold-text">together</span>
         </h2>
-        <p>👁️ <span className="highlight">Reporter</span> is a platform for every citizen.</p>
+        <p>
+          👁️ <span className="highlight">Reporter</span> is a platform for every citizen.
+        </p>
       </div>
     </div>
   );
