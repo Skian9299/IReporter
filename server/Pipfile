@@ -13,6 +13,7 @@ sqlalchemy-serializer = "*"
 pyjwt = "*"
 werkzeug = "*"
 flask-jwt-extended = "*"
+gunicorn = "*"
 
 [dev-packages]
 
