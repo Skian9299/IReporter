@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from flask_jwt_extended import create_access_token
 from flask_jwt_extended import (
     create_access_token, jwt_required, get_jwt
 )
@@ -41,11 +42,8 @@ def login():
     if not user or not user.check_password(password):
         return jsonify({"error": "Invalid email or password"}), 401
 
-    # Create token with user id as identity, etc.
-    access_token = create_access_token(
-        identity=str(user.id),
-        additional_claims={"email": user.email, "role": user.role}
-    )
+     # Create access token
+    access_token = create_access_token(identity=user.id)
 
     # Return the token along with role and user info
     return jsonify(
