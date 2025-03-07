@@ -5,20 +5,15 @@ import "./Dashboard.css";
 const Dashboard = () => {
   const navigate = useNavigate();
   const [username, setUsername] = useState("User");
-  const [profileImage, setProfileImage] = useState(localStorage.getItem("profileImage") || null);
-  const [location, setLocation] = useState(localStorage.getItem("location") || "");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [redFlagTitle, setRedFlagTitle] = useState("");
   const [redFlagDescription, setRedFlagDescription] = useState("");
-  const [redFlagImage, setRedFlagImage] = useState(null);
-  const [redFlagVideo, setRedFlagVideo] = useState(null);
+  const [redFlagMedia, setRedFlagMedia] = useState([]);
   const [interventionTitle, setInterventionTitle] = useState("");
   const [interventionDescription, setInterventionDescription] = useState("");
-  const [interventionImage, setInterventionImage] = useState(null);
-  const [interventionVideo, setInterventionVideo] = useState(null);
+  const [interventionMedia, setInterventionMedia] = useState([]);
   const [error, setError] = useState("");
-  const [showLocation, setShowLocation] = useState(false); // State to toggle location visibility
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("user"));
@@ -31,73 +26,15 @@ const Dashboard = () => {
     }
   }, [navigate]);
 
-  // Handle Profile Image Upload
-  const handleImageUpload = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfileImage(reader.result);
-        localStorage.setItem("profileImage", reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // Handle Report Image/Video Upload
-  const handleReportFileUpload = (event, type, fileType) => {
-    const file = event.target.files[0];
-    if (file) {
-      if (type === "redFlag") {
-        if (fileType === "image") {
-          setRedFlagImage(file);
-        } else if (fileType === "video") {
-          setRedFlagVideo(file);
-        }
-      } else if (type === "intervention") {
-        if (fileType === "image") {
-          setInterventionImage(file);
-        } else if (fileType === "video") {
-          setInterventionVideo(file);
-        }
-      }
-    }
-  };
-
-  // Fetch User's Current Location
   const fetchLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const lat = position.coords.latitude;
-          const lon = position.coords.longitude;
-
-          setLatitude(lat);
-          setLongitude(lon);
-
-          try {
-            // Reverse geocoding to get location name
-            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
-            const data = await response.json();
-
-            if (data && data.address) {
-              const placeName = data.address.city || data.address.town || data.address.village || "Unknown Location";
-              setLocation(placeName);
-              localStorage.setItem("location", placeName);
-            } else {
-              setLocation("Unknown Location");
-            }
-          } catch (error) {
-            console.error("Error fetching location name:", error);
-            setLocation("Unknown Location");
-          }
-
-          localStorage.setItem("latitude", lat);
-          localStorage.setItem("longitude", lon);
-          setShowLocation(true); // Show location details
+        (position) => {
+          setLatitude(position.coords.latitude);
+          setLongitude(position.coords.longitude);
         },
         (error) => {
-          setError("Unable to fetch location. Please enter it manually.");
+          setError("Unable to fetch location. Please enable location services.");
         }
       );
     } else {
@@ -105,101 +42,91 @@ const Dashboard = () => {
     }
   };
 
-  // Submit Red Flag Report
-  const submitRedFlag = async () => {
-    if (!redFlagTitle || !redFlagDescription || !location || !latitude || !longitude) {
-      setError("Please fill in all required fields for the red flag report.");
+  const handleMediaUpload = async (files, reportId, isRedFlag) => {
+    const endpoint = isRedFlag 
+      ? `http://localhost:5000/redflags/${reportId}/media`
+      : `http://localhost:5000/interventions/${reportId}/media`;
+
+    try {
+      await Promise.all(files.map(async (file) => {
+        const formData = new FormData();
+        formData.append("file", file);
+        
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to upload media");
+        }
+      }));
+    } catch (error) {
+      console.error("Media upload error:", error);
+      throw error;
+    }
+  };
+
+  const submitReport = async (isRedFlag) => {
+    const baseUrl = isRedFlag ? "redflags" : "interventions";
+    const title = isRedFlag ? redFlagTitle : interventionTitle;
+    const description = isRedFlag ? redFlagDescription : interventionDescription;
+    const media = isRedFlag ? redFlagMedia : interventionMedia;
+
+    if (!title || !description || !latitude || !longitude) {
+      setError("Please fill in all required fields");
       return;
     }
 
-    const formData = new FormData();
-    formData.append("title", redFlagTitle);
-    formData.append("description", redFlagDescription);
-    formData.append("location", location);
-    formData.append("latitude", parseFloat(latitude));
-    formData.append("longitude", parseFloat(longitude));
-
-    if (redFlagImage) {
-      formData.append("image", redFlagImage);
-    }
-    if (redFlagVideo) {
-      formData.append("video", redFlagVideo);
-    }
-
     try {
-      const response = await fetch("http://localhost:5000/redflags", {
+      // Create report
+      const reportResponse = await fetch(`http://localhost:5000/${baseUrl}`, {
         method: "POST",
         headers: {
+          "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: formData,
+        body: JSON.stringify({
+          title,
+          description,
+          latitude: parseFloat(latitude),
+          longitude: parseFloat(longitude),
+        }),
       });
 
-      const data = await response.json();
-      if (response.ok) {
-        alert("Red flag report submitted successfully!");
+      if (!reportResponse.ok) {
+        const errorData = await reportResponse.json();
+        throw new Error(errorData.message || "Failed to submit report");
+      }
+
+      const reportData = await reportResponse.json();
+      
+      // Upload media files
+      if (media.length > 0) {
+        await handleMediaUpload(media, reportData.id, isRedFlag);
+      }
+
+      // Reset form
+      if (isRedFlag) {
         setRedFlagTitle("");
         setRedFlagDescription("");
-        setRedFlagImage(null);
-        setRedFlagVideo(null);
-        setError("");
+        setRedFlagMedia([]);
       } else {
-        setError(data.error || "Failed to submit red flag report.");
-      }
-    } catch (error) {
-      console.error("Error submitting red flag:", error);
-      setError("An error occurred while submitting the red flag.");
-    }
-  };
-
-  // Submit Intervention Report
-  const submitIntervention = async () => {
-    if (!interventionTitle || !interventionDescription || !location || !latitude || !longitude) {
-      setError("Please fill in all required fields for the intervention report.");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("title", interventionTitle);
-    formData.append("description", interventionDescription);
-    formData.append("location", location);
-    formData.append("latitude", parseFloat(latitude));
-    formData.append("longitude", parseFloat(longitude));
-    if (interventionImage) {
-      formData.append("image", interventionImage);
-    }
-    if (interventionVideo) {
-      formData.append("video", interventionVideo);
-    }
-
-
-    try {
-      const response = await fetch("http://localhost:5000/interventions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: formData,
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        alert("Intervention report submitted successfully!");
         setInterventionTitle("");
         setInterventionDescription("");
-        setInterventionImage(null);
-        setInterventionVideo(null);
-        setError("");
-      } else {
-        setError(data.error || "Failed to submit intervention report.");
+        setInterventionMedia([]);
       }
+
+      setError("");
+      alert("Report submitted successfully!");
     } catch (error) {
-      console.error("Error submitting intervention:", error);
-      setError("An error occurred while submitting the intervention.");
+      setError(error.message);
     }
   };
 
-  // Handle Logout
   const handleLogout = () => {
     localStorage.clear();
     navigate("/");
@@ -207,79 +134,99 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard-container">
-      {/* HEADER SECTION */}
       <div className="dashboard-header">
-        <div className="user-info" onClick={() => document.getElementById("profileImageUpload").click()}>
-          <input type="file" id="profileImageUpload" accept="image/*" hidden onChange={handleImageUpload} />
-          <img src={profileImage || "default-avatar.png"} alt="Profile" className="profile-pic" />
+        <div className="user-info">
           <span className="username">{username}</span>
         </div>
-
         <div className="dashboard-buttons">
-          <button className="add-report" onClick={() => navigate("/dashboard")}>Add Report</button>
-          <button className="all-reports" onClick={() => navigate("/reports")}>All Reports</button>
           <button className="logout" onClick={handleLogout}>Log Out</button>
         </div>
       </div>
 
-      {/* REPORT SECTION */}
       <div className="report-sections">
-        {/* RED FLAG REPORT */}
+        {/* Red Flag Section */}
         <div className="report-box red-flag">
           <h3>Red Flag</h3>
-          <input type="text" placeholder="Title" value={redFlagTitle} onChange={(e) => setRedFlagTitle(e.target.value)} />
-          <textarea placeholder="Report corruption..." value={redFlagDescription} onChange={(e) => setRedFlagDescription(e.target.value)} />
+          <input
+            type="text"
+            placeholder="Title"
+            value={redFlagTitle}
+            onChange={(e) => setRedFlagTitle(e.target.value)}
+          />
+          <textarea
+            placeholder="Report corruption..."
+            value={redFlagDescription}
+            onChange={(e) => setRedFlagDescription(e.target.value)}
+          />
 
           <div className="report-actions">
-            <input type="file" id="redFlagImageUpload" accept="image/*" hidden onChange={(e) => handleReportFileUpload(e, "redFlag", "image")} />
-            <button onClick={() => document.getElementById("redFlagImageUpload").click()}>📷 Upload Image</button>
-            <input type="file" id="redFlagVideoUpload" accept="video/*" hidden onChange={(e) => handleReportFileUpload(e, "redFlag", "video")} />
-            <button onClick={() => document.getElementById("redFlagVideoUpload").click()}>🎥 Upload Video</button>
-            <button onClick={fetchLocation}>📍 Fetch Location</button>
+            <input
+              type="file"
+              multiple
+              onChange={(e) => setRedFlagMedia([...e.target.files])}
+            />
+            <button onClick={fetchLocation}>📍 Get Location</button>
           </div>
 
-          {showLocation && ( // Toggle visibility of location, latitude, and longitude
-            <div className="location-info">
-              <p><strong>Location:</strong> {location}</p>
-              <p><strong>Latitude:</strong> {latitude}</p>
-              <p><strong>Longitude:</strong> {longitude}</p>
-            </div>
-          )}
+          <div className="location-info">
+            {latitude && longitude && (
+              <>
+                <p><strong>Latitude:</strong> {latitude}</p>
+                <p><strong>Longitude:</strong> {longitude}</p>
+              </>
+            )}
+          </div>
 
-          {redFlagImage && <img src={URL.createObjectURL(redFlagImage)} alt="Red Flag" className="report-image" />}
-          {redFlagVideo && <video src={URL.createObjectURL(redFlagVideo)} controls className="report-video" />}
-          <button className="report-btn" onClick={submitRedFlag}>Submit Report</button>
+          <button 
+            className="report-btn"
+            onClick={() => submitReport(true)}
+          >
+            Submit Red Flag
+          </button>
         </div>
 
-        {/* INTERVENTION REPORT */}
+        {/* Intervention Section */}
         <div className="report-box intervention">
           <h3>Intervention</h3>
-          <input type="text" placeholder="Title" value={interventionTitle} onChange={(e) => setInterventionTitle(e.target.value)} />
-          <textarea placeholder="Report an issue needing government intervention..." value={interventionDescription} onChange={(e) => setInterventionDescription(e.target.value)} />
+          <input
+            type="text"
+            placeholder="Title"
+            value={interventionTitle}
+            onChange={(e) => setInterventionTitle(e.target.value)}
+          />
+          <textarea
+            placeholder="Report an issue needing government intervention..."
+            value={interventionDescription}
+            onChange={(e) => setInterventionDescription(e.target.value)}
+          />
 
           <div className="report-actions">
-            <input type="file" id="interventionImageUpload" accept="image/*" hidden onChange={(e) => handleReportFileUpload(e, "intervention", "image")} />
-            <button onClick={() => document.getElementById("interventionImageUpload").click()}>📷 Upload Image</button>
-            <input type="file" id="interventionVideoUpload" accept="video/*" hidden onChange={(e) => handleReportFileUpload(e, "intervention", "video")} />
-            <button onClick={() => document.getElementById("interventionVideoUpload").click()}>🎥 Upload Video</button>
-            <button onClick={fetchLocation}>📍 Fetch Location</button>
+            <input
+              type="file"
+              multiple
+              onChange={(e) => setInterventionMedia([...e.target.files])}
+            />
+            <button onClick={fetchLocation}>📍 Get Location</button>
           </div>
 
-          {showLocation && ( // Toggle visibility of location, latitude, and longitude
-            <div className="location-info">
-              <p><strong>Location:</strong> {location}</p>
-              <p><strong>Latitude:</strong> {latitude}</p>
-              <p><strong>Longitude:</strong> {longitude}</p>
-            </div>
-          )}
+          <div className="location-info">
+            {latitude && longitude && (
+              <>
+                <p><strong>Latitude:</strong> {latitude}</p>
+                <p><strong>Longitude:</strong> {longitude}</p>
+              </>
+            )}
+          </div>
 
-          {interventionImage && <img src={URL.createObjectURL(interventionImage)} alt="Intervention" className="report-image" />}
-          {interventionVideo && <video src={URL.createObjectURL(interventionVideo)} controls className="report-video" />}
-          <button className="report-btn" onClick={submitIntervention}>Submit Report</button>
+          <button 
+            className="report-btn"
+            onClick={() => submitReport(false)}
+          >
+            Submit Intervention
+          </button>
         </div>
       </div>
 
-      {/* ERROR MESSAGE */}
       {error && <p className="error-message">{error}</p>}
     </div>
   );
