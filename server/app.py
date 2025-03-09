@@ -9,10 +9,10 @@ from flask_jwt_extended import (
 )
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
-from server.models import Intervention, Media, Notification, RedFlag
+from models import db, Intervention, Media, Notification, RedFlag
+from auth import auth_bp 
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -24,14 +24,11 @@ app.config['JWT_SECRET_KEY'] = 'your-secret-key-here'  # Change in production
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = False  # For development only
 
 # Initialize extensions
-db = SQLAlchemy(app)
+# db = SQLAlchemy(app)
+db.init_app(app)
 migrate = Migrate(app, db)
 CORS(app, supports_credentials=True, origins=["http://localhost:3000"])
 jwt = JWTManager(app)
-
-
-
-
 
 # Register the authentication blueprint
 app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -59,8 +56,8 @@ def create_redflag():
     user_id = get_jwt_identity()
     data = request.get_json()
     
-    if not data or not data.get('title') or not data.get('description'):
-        return jsonify({"message": "Missing title or description"}), 400
+    if not data or not isinstance(data.get('title'), str) or not isinstance(data.get('description'), str):
+     return jsonify({"msg": "Title and description must be strings"}), 422
 
     redflag = RedFlag(
         title=data['title'],
@@ -69,7 +66,7 @@ def create_redflag():
         latitude=data.get('latitude'),
         longitude=data.get('longitude')
     )
-    db.session.add(new_redflag)
+    db.session.add(redflag)
     db.session.commit()
     
     return jsonify({'message': 'Red flag submitted successfully'}), 201
@@ -113,6 +110,9 @@ def add_redflag_media(id):
 def create_intervention():
     user_id = get_jwt_identity()
     data = request.get_json()
+
+    # Debugging: Log the received data
+    app.logger.info(f"Received data: {data}")   
     
     if not data or not data.get('title') or not data.get('description'):
         return jsonify({"message": "Missing title or description"}), 400
@@ -223,12 +223,14 @@ def create_entity_routes(entity_type):
 
 # Apply common routes
 for entity in ['redflags', 'interventions']:
-    get_all, get_one, update_entity, delete_entity, update_location = create_entity_routes(entity)
-    app.add_url_rule(f'/{entity}', view_func=get_all, methods=['GET'])
-    app.add_url_rule(f'/{entity}/<int:id>', view_func=get_one, methods=['GET'])
-    app.add_url_rule(f'/{entity}/<int:id>', view_func=update_entity, methods=['PATCH'])
-    app.add_url_rule(f'/{entity}/<int:id>', view_func=delete_entity, methods=['DELETE'])
-    app.add_url_rule(f'/{entity}/<int:id>/location', view_func=update_location, methods=['PATCH'])
+    get_all_entities, get_one, update_entity, delete_entity, update_location = create_entity_routes(entity)
+
+app.add_url_rule(f'/{entity}/<int:id>', view_func=get_one, methods=['GET'], endpoint=f'get_one_{entity}')
+app.add_url_rule(f'/{entity}/<int:id>', view_func=update_entity, methods=['PATCH'], endpoint=f'update_{entity}')
+app.add_url_rule(f'/{entity}/<int:id>', view_func=delete_entity, methods=['DELETE'], endpoint=f'delete_{entity}')
+app.add_url_rule(f'/{entity}/<int:id>/location', view_func=update_location, methods=['PATCH'], endpoint=f'update_location_{entity}')
+
+
 
 # Notification Routes
 @app.route('/notifications', methods=['GET'])
