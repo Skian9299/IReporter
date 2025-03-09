@@ -9,7 +9,6 @@ const AllReports = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Helper function to parse localStorage safely
   const getStoredUser = () => {
     try {
       return JSON.parse(localStorage.getItem("user"));
@@ -18,7 +17,6 @@ const AllReports = () => {
     }
   };
 
-  // Fetch user reports with AbortController to prevent memory leaks
   const fetchUserReports = useCallback(async (token) => {
     const controller = new AbortController();
     try {
@@ -27,12 +25,10 @@ const AllReports = () => {
 
       const [redFlagsResponse, interventionsResponse] = await Promise.all([
         fetch("http://localhost:5000/redflags", {
-          method: "GET",
           headers: { Authorization: `Bearer ${token}` },
           signal: controller.signal,
         }),
         fetch("http://localhost:5000/interventions", {
-          method: "GET",
           headers: { Authorization: `Bearer ${token}` },
           signal: controller.signal,
         }),
@@ -46,15 +42,16 @@ const AllReports = () => {
         interventionsResponse.json(),
       ]);
 
-      // Ensure each report has a type for handling edits & deletions
-      const formattedRedFlags = redFlags.map((r) => ({ ...r, type: "redflag" }));
-      const formattedInterventions = interventions.map((i) => ({ ...i, type: "intervention" }));
+      // Combine and format reports with media
+      const combined = [
+        ...redFlags.map(r => ({ ...r, type: "redflag" })),
+        ...interventions.map(i => ({ ...i, type: "intervention" }))
+      ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-      setReports([...formattedRedFlags, ...formattedInterventions]);
+      setReports(combined);
     } catch (error) {
       if (error.name !== "AbortError") {
-        console.error("Error fetching reports:", error);
-        setError(error.message || "Failed to fetch reports.");
+        setError(error.message || "Failed to load reports");
       }
     } finally {
       setLoading(false);
@@ -66,7 +63,7 @@ const AllReports = () => {
     const storedUser = getStoredUser();
     const token = localStorage.getItem("token");
 
-    if (storedUser && storedUser.first_name && storedUser.last_name && token) {
+    if (storedUser?.id && token) {
       setUsername(`${storedUser.first_name} ${storedUser.last_name}`);
       fetchUserReports(token);
     } else {
@@ -74,98 +71,141 @@ const AllReports = () => {
     }
   }, [navigate, fetchUserReports]);
 
-  // Handle edit
   const handleEdit = (report) => {
+    if (report.status !== 'draft') {
+      alert("Only draft reports can be edited");
+      return;
+    }
     navigate(`/edit-report/${report.id}?type=${report.type}`);
   };
 
-  // Handle delete
   const handleDelete = async (report) => {
-    const confirmed = window.confirm(`Delete "${report.title}"? This action cannot be undone.`);
-    if (!confirmed) return;
+    if (report.status !== 'draft') {
+      alert("Only draft reports can be deleted");
+      return;
+    }
 
-    const endpoint = report.type === "redflag" ? "redflags" : "interventions";
+    if (!window.confirm(`Delete "${report.title}"?`)) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/${endpoint}/${report.id}`, {
+      const response = await fetch(`http://localhost:5000/${report.type}s/${report.id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
 
-      if (!response.ok) throw new Error("Failed to delete report");
-      setReports(reports.filter((r) => r.id !== report.id));
-      alert("Report deleted successfully.");
+      if (!response.ok) throw new Error("Delete failed");
+      setReports(reports.filter(r => r.id !== report.id));
     } catch (error) {
-      console.error("Error deleting report:", error);
-      alert("An error occurred while deleting the report.");
+      setError(error.message);
     }
   };
 
-  // Handle logout
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
-    navigate("/");
+  const getStatusStyle = (status) => {
+    switch (status) {
+      case 'draft': return { background: '#e0e0e0', color: '#333' };
+      case 'under_investigation': return { background: '#fff3cd', color: '#856404' };
+      case 'resolved': return { background: '#d4edda', color: '#155724' };
+      case 'rejected': return { background: '#f8d7da', color: '#721c24' };
+      default: return {};
+    }
   };
 
   return (
     <div className="reports-container">
-      <div className="reports-header">
+      <header className="reports-header">
         <div className="user-info">
-          <img src="default-avatar.png" alt="Profile" className="profile-pic" />
           <span className="username">{username}</span>
+          <div className="header-actions">
+            <button onClick={() => navigate("/dashboard")}>New Report</button>
+            <button onClick={() => navigate("/reports")}>Refresh</button>
+            <button onClick={() => {
+              localStorage.clear();
+              navigate("/");
+            }}>Logout</button>
+          </div>
         </div>
-        <div className="dashboard-buttons">
-          <button onClick={() => navigate("/dashboard")}>Add Report</button>
-          <button onClick={() => navigate("/reports")}>All Reports</button>
-          <button onClick={handleLogout}>Log Out</button>
-        </div>
-      </div>
+      </header>
 
-      <h2>Your Reports</h2>
+      <main className="reports-main">
+        <h1>Your Reports</h1>
 
-      {loading ? (
-        <p>Loading reports...</p>
-      ) : error ? (
-        <p className="error-message">{error}</p>
-      ) : reports.length > 0 ? (
-        <div className="reports-list">
-          {reports.map((report) => (
-            <div key={report.id} className="report-card">
-              <div className="report-content">
-                <h3>{report.title}</h3>
-                <p>{report.description}</p>
-                <p><strong>Location:</strong> {report.location}</p>
-                <p><strong>Latitude:</strong> {report.latitude}</p>
-                <p><strong>Longitude:</strong> {report.longitude}</p>
-                <p><strong>Status:</strong> {report.status}</p>
-                <p><strong>Created At:</strong> {new Date(report.created_at).toLocaleString()}</p>
-                <p><strong>Updated At:</strong> {new Date(report.updated_at).toLocaleString()}</p>
-                {report.image_url && (
-                  <img
-                    src={`http://localhost:5000/uploads/${report.image_url}`}
-                    alt="Report"
-                    className="report-image"
-                  />
-                )}
-                {report.video_url && (
-                  <video
-                    src={`http://localhost:5000/uploads/${report.video_url}`}
-                    controls
-                    className="report-video"
-                  />
-                )}
+        {loading ? (
+          <div className="loading">Loading reports...</div>
+        ) : error ? (
+          <div className="error">{error}</div>
+        ) : reports.length > 0 ? (
+          <div className="reports-grid">
+            {reports.map(report => (
+              <div key={report.id} className="report-card">
+                <div className="card-header">
+                  <h3>{report.title}</h3>
+                  <span 
+                    className="status-badge"
+                    style={getStatusStyle(report.status)}
+                  >
+                    {report.status.replace('_', ' ')}
+                  </span>
+                </div>
+
+                <div className="card-body">
+                  <p className="description">{report.description}</p>
+                  
+                  <div className="location-info">
+                    <div className="coordinates">
+                      <span>Lat: {report.latitude}</span>
+                      <span>Lon: {report.longitude}</span>
+                    </div>
+                  </div>
+
+                  {report.media?.length > 0 && (
+                    <div className="media-preview">
+                      {report.media.map(media => (
+                        <div key={media.id} className="media-item">
+                          {media.media_type === 'image' ? (
+                            <img 
+                              src={`http://localhost:5000/uploads/${media.file_url}`} 
+                              alt="Report media" 
+                            />
+                          ) : (
+                            <video controls>
+                              <source 
+                                src={`http://localhost:5000/uploads/${media.file_url}`} 
+                                type={`video/${media.file_url.split('.').pop()}`} 
+                              />
+                            </video>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="meta-info">
+                    <span className="report-type">{report.type}</span>
+                    <time>{new Date(report.created_at).toLocaleDateString()}</time>
+                  </div>
+                </div>
+
+                <div className="card-actions">
+                  <button 
+                    onClick={() => handleEdit(report)}
+                    disabled={report.status !== 'draft'}
+                  >
+                    Edit
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(report)}
+                    disabled={report.status !== 'draft'}
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
-              <div className="report-actions">
-                <button onClick={() => handleEdit(report)}>Edit</button>
-                <button onClick={() => handleDelete(report)}>Delete</button>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p>No reports found.</p>
-      )}
+            ))}
+          </div>
+        ) : (
+          <div className="empty-state">No reports found</div>
+        )}
+      </main>
     </div>
   );
 };
