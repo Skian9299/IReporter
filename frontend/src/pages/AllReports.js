@@ -8,9 +8,7 @@ const AllReports = () => {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  // State for handling the report currently being edited
   const [editingReport, setEditingReport] = useState(null);
-  // Local state for the edit form fields
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editLocation, setEditLocation] = useState("");
@@ -27,7 +25,6 @@ const AllReports = () => {
     }
   };
 
-  // Fetch user reports with AbortController to prevent memory leaks
   const fetchUserReports = useCallback(async (token) => {
     const controller = new AbortController();
     try {
@@ -47,14 +44,15 @@ const AllReports = () => {
         }),
       ]);
 
-      if (!response.ok) throw new Error("Failed to fetch reports");
+      if (!redFlagsResponse.ok || !interventionsResponse.ok) {
+        throw new Error("Failed to fetch reports");
+      }
 
       const [redFlags, interventions] = await Promise.all([
         redFlagsResponse.json(),
         interventionsResponse.json(),
       ]);
 
-      // Ensure each report has a type for handling edits & deletions
       const formattedRedFlags = redFlags.map((r) => ({ ...r, type: "redflag" }));
       const formattedInterventions = interventions.map((i) => ({ ...i, type: "intervention" }));
 
@@ -81,22 +79,21 @@ const AllReports = () => {
     }
   }, [navigate, fetchUserReports]);
 
-  // Handle edit
   const handleEdit = (report) => {
     navigate(`/edit-report/${report.id}?type=${report.type}`);
   };
 
-  // Handle delete
   const handleDelete = async (report) => {
     if (report.status !== 'draft') {
       alert("Only draft reports can be deleted");
       return;
     }
 
+    const token = localStorage.getItem("token");
     const endpoint = report.type === "redflag" ? "redflags" : "interventions";
 
     try {
-      const response = await fetch(`http://localhost:5000/${report.type}s/${report.id}`, {
+      const response = await fetch(`http://localhost:5000/${endpoint}/${report.id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -110,7 +107,6 @@ const AllReports = () => {
     }
   };
 
-  // Handle logout
   const handleLogout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("token");
@@ -125,10 +121,7 @@ const AllReports = () => {
           <div className="header-actions">
             <button onClick={() => navigate("/dashboard")}>New Report</button>
             <button onClick={() => navigate("/reports")}>Refresh</button>
-            <button onClick={() => {
-              localStorage.clear();
-              navigate("/");
-            }}>Logout</button>
+            <button onClick={handleLogout}>Logout</button>
           </div>
         </div>
       </header>
@@ -136,48 +129,49 @@ const AllReports = () => {
       <main className="reports-main">
         <h1>Your Reports</h1>
 
-      {loading ? (
-        <p>Loading reports...</p>
-      ) : error ? (
-        <p className="error-message">{error}</p>
-      ) : reports.length > 0 ? (
-        <div className="reports-list">
-          {reports.map((report) => (
-            <div key={report.id} className="report-card">
-              <div className="report-content">
-                <h3>{report.title}</h3>
-                <p>{report.description}</p>
-                <p><strong>Location:</strong> {report.location}</p>
-                <p><strong>Latitude:</strong> {report.latitude}</p>
-                <p><strong>Longitude:</strong> {report.longitude}</p>
-                <p><strong>Status:</strong> {report.status}</p>
-                <p><strong>Created At:</strong> {new Date(report.created_at).toLocaleString()}</p>
-                <p><strong>Updated At:</strong> {new Date(report.updated_at).toLocaleString()}</p>
-                {report.image_url && (
-                  <img
-                    src={`http://localhost:5000/uploads/${report.image_url}`}
-                    alt="Report"
-                    className="report-image"
-                  />
-                )}
-                {report.video_url && (
-                  <video
-                    src={`http://localhost:5000/uploads/${report.video_url}`}
-                    controls
-                    className="report-video"
-                  />
-                )}
+        {loading ? (
+          <p>Loading reports...</p>
+        ) : error ? (
+          <p className="error-message">{error}</p>
+        ) : reports.length > 0 ? (
+          <div className="reports-list">
+            {reports.map((report) => (
+              <div key={report.id} className="report-card">
+                <div className="report-content">
+                  <h3>{report.title}</h3>
+                  <p>{report.description}</p>
+                  <p><strong>Location:</strong> {report.location}</p>
+                  <p><strong>Latitude:</strong> {report.latitude}</p>
+                  <p><strong>Longitude:</strong> {report.longitude}</p>
+                  <p><strong>Status:</strong> {report.status}</p>
+                  <p><strong>Created At:</strong> {new Date(report.created_at).toLocaleString()}</p>
+                  <p><strong>Updated At:</strong> {new Date(report.updated_at).toLocaleString()}</p>
+                  {report.image_url && (
+                    <img
+                      src={`http://localhost:5000/uploads/${report.image_url}`}
+                      alt="Report"
+                      className="report-image"
+                    />
+                  )}
+                  {report.video_url && (
+                    <video
+                      src={`http://localhost:5000/uploads/${report.video_url}`}
+                      controls
+                      className="report-video"
+                    />
+                  )}
+                </div>
+                <div className="report-actions">
+                  <button onClick={() => handleEdit(report)}>Edit</button>
+                  <button onClick={() => handleDelete(report)}>Delete</button>
+                </div>
               </div>
-              <div className="report-actions">
-                <button onClick={() => handleEdit(report)}>Edit</button>
-                <button onClick={() => handleDelete(report)}>Delete</button>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p>No reports found.</p>
-      )}
+            ))}
+          </div>
+        ) : (
+          <p>No reports found.</p>
+        )}
+      </main>
     </div>
   );
 };

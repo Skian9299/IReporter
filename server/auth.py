@@ -3,6 +3,10 @@ from flask_jwt_extended import (
     create_access_token, jwt_required, get_jwt
 )
 from models import db, User
+from flask_cors import CORS
+from flask_cors import CORS, cross_origin
+
+
 
 auth_bp = Blueprint('auth', __name__)  # Define blueprint first
 CORS(auth_bp)  # Apply CORS to the entire auth blueprint
@@ -43,8 +47,9 @@ def login():
     if not user or not user.check_password(password):
         return jsonify({"error": "Invalid email or password"}), 401
 
-     # Create access token
-    access_token = create_access_token(identity=user.id)
+    # Convert user.id to string before passing as identity
+    access_token = create_access_token(identity=user.email)  # Use email as identity
+ 
 
     return jsonify(
         access_token=access_token,
@@ -56,6 +61,7 @@ def login():
             "last_name": user.last_name,
         }
     ), 200
+
 
 @auth_bp.route('/logout', methods=['POST'])
 @jwt_required()

@@ -2,6 +2,8 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy_serializer import SerializerMixin
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
+import enum
+
 
 # Initialize database
 db = SQLAlchemy()
@@ -38,9 +40,12 @@ class RedFlag(db.Model, SerializerMixin):
     description = db.Column(db.Text, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     status = db.Column(db.String(50), default='draft')  # draft, under investigation, rejected, resolved
+    location = db.Column(db.String(255), nullable=True)
     latitude = db.Column(db.Float, nullable=True)
     longitude = db.Column(db.Float, nullable=True)
+    image_url = db.Column(db.String(200), nullable= True) 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    image_url = db.Column(db.String(200)) 
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     media = db.relationship('Media', backref='redflag', lazy=True)
@@ -55,8 +60,10 @@ class Intervention(db.Model, SerializerMixin):
     description = db.Column(db.Text, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # Allow NULL for user_id
     status = db.Column(db.String(50), default='draft')
+    location = db.Column(db.String(255), nullable=True)
     latitude = db.Column(db.Float, nullable=True)
     longitude = db.Column(db.Float, nullable=True)
+    image_url = db.Column(db.String(200), nullable= True) 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
