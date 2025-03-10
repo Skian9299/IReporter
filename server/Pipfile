@@ -5,15 +5,17 @@ name = "pypi"
 
 [packages]
 python-dotenv = "*"
-flask = "*"
-flask-cors = "*"
-flask-migrate = "*"
-flask-sqlalchemy = "*"
 sqlalchemy-serializer = "*"
 pyjwt = "*"
 werkzeug = "*"
 flask-jwt-extended = "*"
 gunicorn = "*"
+flask = "*"
+flask-cors = "*"
+flask-migrate = "*"
+flask-sqlalchemy = "*"
+flask-mail = "*"
+requests = "*"
 
 [dev-packages]
 

@@ -1,15 +1,16 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import (
-    create_access_token, jwt_required, get_jwt
-)
+from flask_cors import CORS, cross_origin
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt
 from models import db, User
 
-auth_bp = Blueprint('auth', __name__)
+auth_bp = Blueprint('auth', __name__)  # Define blueprint first
+CORS(auth_bp)  # Apply CORS to the entire auth blueprint
 
 # In-memory store for revoked tokens (for demonstration purposes)
 blacklist = set()
 
 @auth_bp.route('/register', methods=['POST'])
+@cross_origin()
 def register():
     data = request.get_json()
     first_name = data.get('first_name')
@@ -30,8 +31,8 @@ def register():
 
     return jsonify({"msg": "User registered successfully"}), 201
 
-# Example Flask login endpoint
 @auth_bp.route('/login', methods=['POST'])
+@cross_origin(supports_credentials=True) 
 def login():
     data = request.get_json()
     email = data.get('email')
@@ -47,7 +48,6 @@ def login():
         additional_claims={"email": user.email, "role": user.role}
     )
 
-    # Return the token along with role and user info
     return jsonify(
         access_token=access_token,
         role=user.role,
@@ -61,12 +61,14 @@ def login():
 
 @auth_bp.route('/logout', methods=['POST'])
 @jwt_required()
+@cross_origin()
 def logout():
     jti = get_jwt()['jti']
     blacklist.add(jti)
     return jsonify({"msg": "Successfully logged out"}), 200
 
 @auth_bp.route('/reset-password', methods=['POST'])
+@cross_origin()
 def reset_password():
     data = request.get_json()
     email = data.get('email')
@@ -88,4 +90,3 @@ def reset_password():
     db.session.commit()
 
     return jsonify({"message": "Password updated successfully."}), 200
-

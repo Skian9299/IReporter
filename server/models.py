@@ -25,11 +25,32 @@ class User(db.Model, SerializerMixin):
         return check_password_hash(self.password, password)
 
 # Define status options for reports using Python's Enum
-class Status(enum.Enum):  # Use enum.Enum, not sqlalchemy.Enum
-    DRAFT = "Draft"
-    UNDER_INVESTIGATION = "Under Investigation"
-    RESOLVED = "Resolved"
-    REJECTED = "Rejected"
+class Status(enum.Enum):
+    DRAFT = "DRAFT"
+    UNDER_INVESTIGATION = "UNDER_INVESTIGATION"
+    RESOLVED = "RESOLVED"
+    REJECTED = "REJECTED"
+
+class Report(db.Model, SerializerMixin):
+    """Report model for RedFlags and Interventions."""
+    
+    __tablename__ = 'reports'  # Explicitly set table name
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    location = db.Column(db.String(255), nullable=False)
+    latitude = db.Column(db.Float)
+    longitude = db.Column(db.Float)
+    status = db.Column(SQLEnum(Status), default=Status.DRAFT, nullable=False)
+    image_url = db.Column(db.String(255), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+    # Relationship (optional) if you want to access the user who created the report
+    user = db.relationship('User', backref=db.backref('reports', lazy=True))
+
 
 # RedFlag Model
 class RedFlag(db.Model, SerializerMixin):
@@ -64,3 +85,6 @@ class Intervention(db.Model, SerializerMixin):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+
+   
