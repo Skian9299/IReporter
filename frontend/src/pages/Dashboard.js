@@ -11,19 +11,18 @@ const Dashboard = () => {
   const [longitude, setLongitude] = useState("");
   const [redFlagTitle, setRedFlagTitle] = useState("");
   const [redFlagDescription, setRedFlagDescription] = useState("");
-  const [redFlagImage, setRedFlagImage] = useState(null);
-  const [redFlagVideo, setRedFlagVideo] = useState(null);
+  // For red flag report, use a text input for image URL
+  const [redFlagImageUrl, setRedFlagImageUrl] = useState("");
+  // For intervention, use a text input for image URL instead of file uploads
   const [interventionTitle, setInterventionTitle] = useState("");
   const [interventionDescription, setInterventionDescription] = useState("");
-  const [interventionImage, setInterventionImage] = useState(null);
-  const [interventionVideo, setInterventionVideo] = useState(null);
+  const [interventionImageUrl, setInterventionImageUrl] = useState("");
   const [error, setError] = useState("");
-  const [showLocation, setShowLocation] = useState(false); // State to toggle location visibility
+  const [showLocation, setShowLocation] = useState(false);
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("user"));
     const token = localStorage.getItem("token");
-
     if (storedUser && storedUser.first_name && storedUser.last_name && token) {
       setUsername(`${storedUser.first_name} ${storedUser.last_name}`);
     } else {
@@ -31,7 +30,7 @@ const Dashboard = () => {
     }
   }, [navigate]);
 
-  // Handle Profile Image Upload
+  // Handle Profile Image Upload (for the user profile)
   const handleImageUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -44,26 +43,6 @@ const Dashboard = () => {
     }
   };
 
-  // Handle Report Image/Video Upload
-  const handleReportFileUpload = (event, type, fileType) => {
-    const file = event.target.files[0];
-    if (file) {
-      if (type === "redFlag") {
-        if (fileType === "image") {
-          setRedFlagImage(file);
-        } else if (fileType === "video") {
-          setRedFlagVideo(file);
-        }
-      } else if (type === "intervention") {
-        if (fileType === "image") {
-          setInterventionImage(file);
-        } else if (fileType === "video") {
-          setInterventionVideo(file);
-        }
-      }
-    }
-  };
-
   // Fetch User's Current Location
   const fetchLocation = () => {
     if (navigator.geolocation) {
@@ -71,15 +50,11 @@ const Dashboard = () => {
         async (position) => {
           const lat = position.coords.latitude;
           const lon = position.coords.longitude;
-
           setLatitude(lat);
           setLongitude(lon);
-
           try {
-            // Reverse geocoding to get location name
             const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
             const data = await response.json();
-
             if (data && data.address) {
               const placeName = data.address.city || data.address.town || data.address.village || "Unknown Location";
               setLocation(placeName);
@@ -91,10 +66,9 @@ const Dashboard = () => {
             console.error("Error fetching location name:", error);
             setLocation("Unknown Location");
           }
-
           localStorage.setItem("latitude", lat);
           localStorage.setItem("longitude", lon);
-          setShowLocation(true); // Show location details
+          setShowLocation(true);
         },
         (error) => {
           setError("Unable to fetch location. Please enter it manually.");
@@ -105,34 +79,31 @@ const Dashboard = () => {
     }
   };
 
-  // Submit Red Flag Report
+  // Submit Red Flag Report using JSON
   const submitRedFlag = async () => {
     if (!redFlagTitle || !redFlagDescription || !location || !latitude || !longitude) {
       setError("Please fill in all required fields for the red flag report.");
       return;
     }
 
-    const formData = new FormData();
-    formData.append("title", redFlagTitle);
-    formData.append("description", redFlagDescription);
-    formData.append("location", location);
-    formData.append("latitude", parseFloat(latitude));
-    formData.append("longitude", parseFloat(longitude));
-
-    if (redFlagImage) {
-      formData.append("image", redFlagImage);
-    }
-    if (redFlagVideo) {
-      formData.append("video", redFlagVideo);
-    }
+    const payload = {
+      title: redFlagTitle,
+      description: redFlagDescription,
+      location: location,
+      latitude: parseFloat(latitude),
+      longitude: parseFloat(longitude),
+      image_url: redFlagImageUrl
+    };
 
     try {
       const response = await fetch("http://localhost:5000/redflags", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "application/json"
         },
-        body: formData,
+        body: JSON.stringify(payload),
+        credentials: "include",
       });
 
       const data = await response.json();
@@ -140,8 +111,7 @@ const Dashboard = () => {
         alert("Red flag report submitted successfully!");
         setRedFlagTitle("");
         setRedFlagDescription("");
-        setRedFlagImage(null);
-        setRedFlagVideo(null);
+        setRedFlagImageUrl("");
         setError("");
       } else {
         setError(data.error || "Failed to submit red flag report.");
@@ -152,43 +122,38 @@ const Dashboard = () => {
     }
   };
 
-  // Submit Intervention Report
+  // Submit Intervention Report using JSON
   const submitIntervention = async () => {
     if (!interventionTitle || !interventionDescription || !location || !latitude || !longitude) {
       setError("Please fill in all required fields for the intervention report.");
       return;
     }
 
-    const formData = new FormData();
-    formData.append("title", interventionTitle);
-    formData.append("description", interventionDescription);
-    formData.append("location", location);
-    formData.append("latitude", parseFloat(latitude));
-    formData.append("longitude", parseFloat(longitude));
-    if (interventionImage) {
-      formData.append("image", interventionImage);
-    }
-    if (interventionVideo) {
-      formData.append("video", interventionVideo);
-    }
-
+    const payload = {
+      title: interventionTitle,
+      description: interventionDescription,
+      location: location,
+      latitude: parseFloat(latitude),
+      longitude: parseFloat(longitude),
+      image_url: interventionImageUrl
+    };
 
     try {
-      const response = await fetch("http://localhost:5000/interventions", {
+      const response = await fetch("http://127.0.0.1:5000/interventions", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "application/json",
         },
-        body: formData,
+        body: JSON.stringify(payload),
+        credentials: "include",
       });
-
       const data = await response.json();
       if (response.ok) {
         alert("Intervention report submitted successfully!");
         setInterventionTitle("");
         setInterventionDescription("");
-        setInterventionImage(null);
-        setInterventionVideo(null);
+        setInterventionImageUrl("");
         setError("");
       } else {
         setError(data.error || "Failed to submit intervention report.");
@@ -214,7 +179,6 @@ const Dashboard = () => {
           <img src={profileImage || "default-avatar.png"} alt="Profile" className="profile-pic" />
           <span className="username">{username}</span>
         </div>
-
         <div className="dashboard-buttons">
           <button className="add-report" onClick={() => navigate("/dashboard")}>Add Report</button>
           <button className="all-reports" onClick={() => navigate("/reports")}>All Reports</button>
@@ -227,54 +191,68 @@ const Dashboard = () => {
         {/* RED FLAG REPORT */}
         <div className="report-box red-flag">
           <h3>Red Flag</h3>
-          <input type="text" placeholder="Title" value={redFlagTitle} onChange={(e) => setRedFlagTitle(e.target.value)} />
-          <textarea placeholder="Report corruption..." value={redFlagDescription} onChange={(e) => setRedFlagDescription(e.target.value)} />
-
+          <input
+            type="text"
+            placeholder="Title"
+            value={redFlagTitle}
+            onChange={(e) => setRedFlagTitle(e.target.value)}
+          />
+          <textarea
+            placeholder="Describe the issue..."
+            value={redFlagDescription}
+            onChange={(e) => setRedFlagDescription(e.target.value)}
+          />
+          {/* Input for the image URL */}
+          <input
+            type="text"
+            placeholder="Image URL"
+            value={redFlagImageUrl}
+            onChange={(e) => setRedFlagImageUrl(e.target.value)}
+          />
           <div className="report-actions">
-            <input type="file" id="redFlagImageUpload" accept="image/*" hidden onChange={(e) => handleReportFileUpload(e, "redFlag", "image")} />
-            <button onClick={() => document.getElementById("redFlagImageUpload").click()}>📷 Upload Image</button>
-            <input type="file" id="redFlagVideoUpload" accept="video/*" hidden onChange={(e) => handleReportFileUpload(e, "redFlag", "video")} />
-            <button onClick={() => document.getElementById("redFlagVideoUpload").click()}>🎥 Upload Video</button>
             <button onClick={fetchLocation}>📍 Fetch Location</button>
           </div>
-
-          {showLocation && ( // Toggle visibility of location, latitude, and longitude
+          {showLocation && (
             <div className="location-info">
               <p><strong>Location:</strong> {location}</p>
               <p><strong>Latitude:</strong> {latitude}</p>
               <p><strong>Longitude:</strong> {longitude}</p>
             </div>
           )}
-
-          {redFlagImage && <img src={URL.createObjectURL(redFlagImage)} alt="Red Flag" className="report-image" />}
-          {redFlagVideo && <video src={URL.createObjectURL(redFlagVideo)} controls className="report-video" />}
           <button className="report-btn" onClick={submitRedFlag}>Submit Report</button>
         </div>
 
         {/* INTERVENTION REPORT */}
         <div className="report-box intervention">
           <h3>Intervention</h3>
-          <input type="text" placeholder="Title" value={interventionTitle} onChange={(e) => setInterventionTitle(e.target.value)} />
-          <textarea placeholder="Report an issue needing government intervention..." value={interventionDescription} onChange={(e) => setInterventionDescription(e.target.value)} />
-
+          <input
+            type="text"
+            placeholder="Title"
+            value={interventionTitle}
+            onChange={(e) => setInterventionTitle(e.target.value)}
+          />
+          <textarea
+            placeholder="Report an issue needing government intervention..."
+            value={interventionDescription}
+            onChange={(e) => setInterventionDescription(e.target.value)}
+          />
+          {/* New input for the image URL */}
+          <input
+            type="text"
+            placeholder="Image URL"
+            value={interventionImageUrl}
+            onChange={(e) => setInterventionImageUrl(e.target.value)}
+          />
           <div className="report-actions">
-            <input type="file" id="interventionImageUpload" accept="image/*" hidden onChange={(e) => handleReportFileUpload(e, "intervention", "image")} />
-            <button onClick={() => document.getElementById("interventionImageUpload").click()}>📷 Upload Image</button>
-            <input type="file" id="interventionVideoUpload" accept="video/*" hidden onChange={(e) => handleReportFileUpload(e, "intervention", "video")} />
-            <button onClick={() => document.getElementById("interventionVideoUpload").click()}>🎥 Upload Video</button>
             <button onClick={fetchLocation}>📍 Fetch Location</button>
           </div>
-
-          {showLocation && ( // Toggle visibility of location, latitude, and longitude
+          {showLocation && (
             <div className="location-info">
               <p><strong>Location:</strong> {location}</p>
               <p><strong>Latitude:</strong> {latitude}</p>
               <p><strong>Longitude:</strong> {longitude}</p>
             </div>
           )}
-
-          {interventionImage && <img src={URL.createObjectURL(interventionImage)} alt="Intervention" className="report-image" />}
-          {interventionVideo && <video src={URL.createObjectURL(interventionVideo)} controls className="report-video" />}
           <button className="report-btn" onClick={submitIntervention}>Submit Report</button>
         </div>
       </div>
