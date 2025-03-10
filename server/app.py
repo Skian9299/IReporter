@@ -20,11 +20,22 @@ from flask_cors import CORS, cross_origin
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app, supports_credentials=True, origins=["https://ireporter-2-6rr9.onrender.com"], methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"], allow_headers=["Content-Type", "Authorization"])
+CORS(app,
+     supports_credentials=True,
+     origins=["https://iireporters.vercel.app"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+     allow_headers=["Content-Type", "Authorization", "X-Requested-With"])
+
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
+    return response
+
 jwt = JWTManager(app)
 
 # Enable CORS for the /send-email route specifically
-CORS(app, resources={r"/send-email": {"origins": "*"}})
+#   
 
 
 
