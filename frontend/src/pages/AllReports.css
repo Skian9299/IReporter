@@ -149,3 +149,9 @@
     justify-content: space-between;
   }
 }
+
+.reports-main {
+  margin-top: 120px; /* Adjust if needed */
+  padding: 20px;
+}
+

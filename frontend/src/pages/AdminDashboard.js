@@ -1,31 +1,71 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
-import "./AdminDashboard.css";
 import { useNavigate } from "react-router-dom";
+import "./AdminDashboard.css";
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [reports, setReports] = useState([]);
   const [filteredReports, setFilteredReports] = useState([]);
   const [filterType, setFilterType] = useState("all");
   const [adminName, setAdminName] = useState("Admin");
   const [profilePic, setProfilePic] = useState(localStorage.getItem("adminAvatar") || "");
-  const navigate = useNavigate();
+  const [error, setError] = useState("");
+  const [userEmail, setUserEmail] = useState("");
 
   useEffect(() => {
-    fetchReports();
-  }, []);
+    fetchUserEmail(); // Fetch user email first
+    fetchReports();   // Then fetch reports
+}, []);
 
-  const fetchReports = async () => {
+const fetchUserEmail = async () => {
     try {
-      const response = await axios.get("http://127.0.0.1:5000/reports", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-      setReports(response.data);
-      setFilteredReports(response.data);
+        const token = localStorage.getItem("token");
+        const response = await axios.get("http://127.0.0.1:5000/auth/me", {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (response.data && response.data.email) {
+            setUserEmail(response.data.email);
+            console.log("✅ User email fetched:", response.data.email);
+        } else {
+            console.error("❌ No email found in response:", response.data);
+        }
+    } catch (error) {
+        console.error("❌ Error fetching user email:", error);
+    }
+};
+
+const fetchReports = async () => {
+    try {
+        const token = localStorage.getItem("token");
+
+        // Fetch red flags and interventions
+        const [redflagsResponse, interventionsResponse] = await Promise.all([
+            axios.get("http://127.0.0.1:5000/redflags", {
+                headers: { Authorization: `Bearer ${token}` },
+            }),
+            axios.get("http://127.0.0.1:5000/interventions", {
+                headers: { Authorization: `Bearer ${token}` },
+            }),
+        ]);
+      // Map each response to add a category and a date property (from created_at)
+      const redflags = redflagsResponse.data.map((report) => ({
+        ...report,
+        category: "Red Flag",
+        date: report.created_at,
+      }));
+      const interventions = interventionsResponse.data.map((report) => ({
+        ...report,
+        category: "Intervention",
+        date: report.created_at,
+      }));
+      const combinedReports = [...redflags, ...interventions];
+      setReports(combinedReports);
+      setFilteredReports(combinedReports);
     } catch (error) {
       console.error("Error fetching reports:", error.message || error);
+      setError("Error fetching reports");
     }
   };
 
@@ -38,38 +78,47 @@ const AdminDashboard = () => {
     }
   };
 
+  // (Status update and email notification function remains unchanged)
   const updateStatus = async (reportId, status, userEmail) => {
     try {
+      const token = localStorage.getItem("token");
+      console.log("🔍 Sending Token:", token);  // Debugging
+      console.log("🔍 User Email:", userEmail);  // Debugging
+      console.log("🔍 Sending Email Payload:", { email: userEmail, status: status, report_id: reportId });
+  
       await axios.patch(
         `http://127.0.0.1:5000/reports/${reportId}/status`,
-        { status },
+        { status: status.toUpperCase() },
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         }
       );
-
+  
       // Send email notification
       await axios.post(
         "http://127.0.0.1:5000/send-email",
         {
-          to: userEmail,
-          subject: "Report Status Update",
-          message: `Your report has been marked as ${status}.`,
+          email: userEmail, 
+          status: status, 
+          report_id: reportId, 
         },
         {
           headers: {
+            "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         }
       );
-
+  
       fetchReports();
     } catch (error) {
       console.error("Error updating status:", error.message || error);
     }
-  };
+  }; 
+  
+      
 
   const handleProfilePicChange = (event) => {
     const file = event.target.files[0];
@@ -94,20 +143,33 @@ const AdminDashboard = () => {
       <div className="sidebar">
         <div className="admin-info">
           <label htmlFor="profile-upload">
-            <img src={profilePic || "/default-avatar.png"} alt="Admin Avatar" className="avatar" />
+            <img
+              src={profilePic || "/default-avatar.png"}
+              alt="Admin Avatar"
+              className="avatar"
+            />
           </label>
-          <input id="profile-upload" type="file" accept="image/*" onChange={handleProfilePicChange} style={{ display: "none" }} />
+          <input
+            id="profile-upload"
+            type="file"
+            accept="image/*"
+            onChange={handleProfilePicChange}
+            style={{ display: "none" }}
+          />
           <h3>{adminName}</h3>
         </div>
         <button onClick={() => filterReports("all")}>All Reports</button>
         <button onClick={() => filterReports("Red Flag")}>Red Flags</button>
         <button onClick={() => filterReports("Intervention")}>Interventions</button>
-        <button onClick={handleLogout} className="logout-btn">Log Out</button>
+        <button onClick={handleLogout} className="logout-btn">
+          Log Out
+        </button>
       </div>
 
       {/* Reports Table */}
       <div className="reports-table">
         <h2>Latest Reports</h2>
+        {error && <p className="error-message">{error}</p>}
         <table>
           <thead>
             <tr>
@@ -115,7 +177,6 @@ const AdminDashboard = () => {
               <th>Report</th>
               <th>Date</th>
               <th>Category</th>
-              <th>Reported By</th>
               <th>Status</th>
             </tr>
           </thead>
@@ -125,14 +186,23 @@ const AdminDashboard = () => {
                 <tr key={report.id}>
                   <td>{index + 1}</td>
                   <td>{report.title}</td>
-                  <td>{report.date}</td>
+                  <td>{new Date(report.date).toLocaleString()}</td>
                   <td>{report.category}</td>
-                  <td>{report.userEmail}</td>
                   <td>
-                    <button onClick={() => updateStatus(report.id, "Resolved", report.userEmail)} className="resolved-btn">
+                    <button
+                      onClick={() =>
+                        updateStatus(report.id, "RESOLVED", report.userEmail)
+                      }
+                      className="resolved-btn"
+                    >
                       Resolved
                     </button>
-                    <button onClick={() => updateStatus(report.id, "Rejected", report.userEmail)} className="rejected-btn">
+                    <button
+                      onClick={() =>
+                        updateStatus(report.id, "REJECTED", report.userEmail)
+                      }
+                      className="rejected-btn"
+                    >
                       Rejected
                     </button>
                   </td>
@@ -140,7 +210,9 @@ const AdminDashboard = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="6" className="no-reports">No reports available</td>
+                <td colSpan="6" className="no-reports">
+                  No reports available
+                </td>
               </tr>
             )}
           </tbody>
