@@ -79,45 +79,37 @@ const fetchReports = async () => {
   };
 
   // (Status update and email notification function remains unchanged)
-  const updateStatus = async (reportId, status, userEmail) => {
+  const updateStatus = async (reportId, status, reportType) => {
     try {
       const token = localStorage.getItem("token");
-      console.log("🔍 Sending Token:", token);  // Debugging
-      console.log("🔍 User Email:", userEmail);  // Debugging
-      console.log("🔍 Sending Email Payload:", { email: userEmail, status: status, report_id: reportId });
-  
-      await axios.patch(
-        `http://127.0.0.1:5000/reports/${reportId}/status`,
+      
+      const response = await axios.patch(
+        `http://localhost:5000/admin/${reportType.toLowerCase()}s/${reportId}/status`,
         { status: status.toUpperCase() },
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${token}`,
           },
         }
       );
   
-      // Send email notification
-      await axios.post(
-        "http://127.0.0.1:5000/send-email",
-        {
-          email: userEmail, 
-          status: status, 
-          report_id: reportId, 
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-  
-      fetchReports();
+      if (response.data) {
+        // Update local state
+        const updatedReports = reports.map(report => {
+          if (report.id === reportId && report.category === reportType) {
+            return { ...report, status: status.toUpperCase() };
+          }
+          return report;
+        });
+        
+        setReports(updatedReports);
+        setFilteredReports(updatedReports);
+      }
     } catch (error) {
-      console.error("Error updating status:", error.message || error);
+      console.error("Error updating status:", error);
+      alert(`Error updating status: ${error.response?.data?.error || error.message}`);
     }
-  }; 
-  
+  };  
       
 
   const handleProfilePicChange = (event) => {

@@ -4,7 +4,6 @@ from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 import enum
 
-
 # Initialize database
 db = SQLAlchemy()
 
@@ -16,7 +15,7 @@ class User(db.Model, SerializerMixin):
     first_name = db.Column(db.String(50), nullable=False)
     last_name = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
-    password = db.Column(db.String(255), nullable=False)
+    password = db.Column(db.String(512), nullable=False)
     role = db.Column(db.String(20), nullable=False, default='user')
 
     def set_password(self, password):

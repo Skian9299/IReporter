@@ -1,3 +1,4 @@
+from mailbox import Message
 import os
 from datetime import datetime
 from functools import wraps
@@ -10,7 +11,7 @@ from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from auth import auth_bp, blacklist
 from flask_jwt_extended import JWTManager
-from models import db, Intervention, RedFlag
+from models import User, db, Intervention, RedFlag
 from flask_mail import Mail
 from flask_cors import CORS, cross_origin
 
@@ -40,7 +41,7 @@ app.config['MAIL_DEFAULT_SENDER'] = 'your-email@gmail.com'  # Same as MAIL_USERN
 mail = Mail(app)
 
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///reports.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://reportsdb_user:vuyuxK3wUjE9wOVeL6HlcMIHieWbTZvQ@dpg-cv7efcbtq21c73aovlm0-a.oregon-postgres.render.com/reportsdb'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'avi'}
@@ -89,6 +90,22 @@ def token_required(f):
         
         return f(current_user_id, *args, **kwargs)
     
+    return decorated
+
+def admin_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        try:
+            verify_jwt_in_request()
+            current_user_id = get_jwt_identity()
+            # Assuming you have a User model with is_admin field
+            from models import User
+            user = User.query.get(current_user_id)
+            if not user or not user.is_admin:
+                return jsonify({'error': 'Admin privileges required'}), 403
+        except Exception as e:
+            return jsonify({'message': 'Authorization failed', 'error': str(e)}), 401
+        return f(current_user_id, *args, **kwargs)
     return decorated
 
 
@@ -262,6 +279,78 @@ def delete_intervention(current_user_id, id):
     db.session.commit()
     return jsonify({'message': 'Intervention deleted'}), 200
 
+# Admin status update for RedFlags
+@app.route('/admin/redflags/<int:id>/status', methods=['PATCH'])
+@admin_required
+def update_redflag_status(current_user_id, id):
+    redflag = RedFlag.query.get_or_404(id)
+    data = request.get_json()
+    
+    if not data or 'status' not in data:
+        return jsonify({'error': 'Status is required'}), 400
+    
+    try:
+        new_status = StatusEnum(data['status'].lower())
+        redflag.status = new_status
+        db.session.commit()
+        
+        # Send email notification
+        user = User.query.get(redflag.user_id)
+        msg = Message(
+            subject=f"Red Flag Status Update - {redflag.id}",
+            recipients=[user.email],
+            body=f"""Your Red Flag report has been updated to: {new_status.value}
+            
+            Report Details:
+            Title: {redflag.title}
+            ID: {redflag.id}
+            New Status: {new_status.value}
+            
+            Thank you for using our platform."""
+        )
+        mail.send(msg)
+        
+        return jsonify(redflag.to_dict())
+        
+    except ValueError:
+        valid_statuses = [e.value for e in StatusEnum]
+        return jsonify({'error': f'Invalid status. Valid values: {valid_statuses}'}), 400
+
+@app.route('/admin/interventions/<int:id>/status', methods=['PATCH'])
+@admin_required
+def update_intervention_status(current_user_id, id):
+    intervention = Intervention.query.get_or_404(id)
+    data = request.get_json()
+    
+    if not data or 'status' not in data:
+        return jsonify({'error': 'Status is required'}), 400
+    
+    try:
+        new_status = StatusEnum(data['status'].lower())
+        intervention.status = new_status
+        db.session.commit()
+        
+        # Send email notification
+        user = User.query.get(intervention.user_id)
+        msg = Message(
+            subject=f"Intervention Status Update - {intervention.id}",
+            recipients=[user.email],
+            body=f"""Your Intervention report has been updated to: {new_status.value}
+            
+            Report Details:
+            Title: {intervention.title}
+            ID: {intervention.id}
+            New Status: {new_status.value}
+            
+            Thank you for using our platform."""
+        )
+        mail.send(msg)
+        
+        return jsonify(intervention.to_dict())
+        
+    except ValueError:
+        valid_statuses = [e.value for e in StatusEnum]
+        return jsonify({'error': f'Invalid status. Valid values: {valid_statuses}'}), 400
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()

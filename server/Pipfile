@@ -16,6 +16,7 @@ flask-migrate = "*"
 flask-sqlalchemy = "*"
 flask-mail = "*"
 requests = "*"
+psycopg2-binary = "*"
 
 [dev-packages]
 
