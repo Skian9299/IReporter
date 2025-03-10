@@ -21,7 +21,7 @@ const AdminDashboard = () => {
 const fetchUserEmail = async () => {
     try {
         const token = localStorage.getItem("token");
-        const response = await axios.get("http://127.0.0.1:5000/auth/me", {
+        const response = await axios.get("https://ireporter-2-6rr9.onrender.com/auth/me", {
             headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -42,10 +42,10 @@ const fetchReports = async () => {
 
         // Fetch red flags and interventions
         const [redflagsResponse, interventionsResponse] = await Promise.all([
-            axios.get("http://127.0.0.1:5000/redflags", {
+            axios.get("https://ireporter-2-6rr9.onrender.com/redflags", {
                 headers: { Authorization: `Bearer ${token}` },
             }),
-            axios.get("http://127.0.0.1:5000/interventions", {
+            axios.get("https://ireporter-2-6rr9.onrender.com/interventions", {
                 headers: { Authorization: `Bearer ${token}` },
             }),
         ]);
@@ -84,7 +84,7 @@ const fetchReports = async () => {
       const token = localStorage.getItem("token");
       
       const response = await axios.patch(
-        `http://localhost:5000/admin/${reportType.toLowerCase()}s/${reportId}/status`,
+        `https://ireporter-2-6rr9.onrender.com/admin/${reportType.toLowerCase()}s/${reportId}/status`,
         { status: status.toUpperCase() },
         {
           headers: {

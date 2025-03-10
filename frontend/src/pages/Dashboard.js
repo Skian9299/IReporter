@@ -93,7 +93,7 @@ const Dashboard = () => {
     };
   
     try {
-      const response = await fetch("http://localhost:5000/redflags", {
+      const response = await fetch("https://ireporter-2-6rr9.onrender.com/redflags", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -135,7 +135,7 @@ const Dashboard = () => {
     };
   
     try {
-      const response = await fetch("http://localhost:5000/interventions", {
+      const response = await fetch("https://ireporter-2-6rr9.onrender.com/interventions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

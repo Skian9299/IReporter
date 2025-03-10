@@ -22,7 +22,7 @@ const EditReport = () => {
   useEffect(() => {
     const fetchReport = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/${type}s/${id}`, {
+        const response = await fetch(`https://ireporter-2-6rr9.onrender.com/${type}s/${id}`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`
           }
@@ -52,7 +52,7 @@ const EditReport = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`http://localhost:5000/${type}s/${id}`, {
+      const response = await fetch(`https://ireporter-2-6rr9.onrender.com/${type}s/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

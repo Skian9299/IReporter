@@ -32,12 +32,12 @@ const AllReports = () => {
       setError(null);
 
       const [redFlagsResponse, interventionsResponse] = await Promise.all([
-        fetch("http://localhost:5000/redflags", {
+        fetch("https://ireporter-2-6rr9.onrender.com/redflags", {
           method: "GET",
           headers: { Authorization: `Bearer ${token}` },
           signal: controller.signal,
         }),
-        fetch("http://localhost:5000/interventions", {
+        fetch("https://ireporter-2-6rr9.onrender.com/interventions", {
           method: "GET",
           headers: { Authorization: `Bearer ${token}` },
           signal: controller.signal,
@@ -93,7 +93,7 @@ const AllReports = () => {
     const endpoint = report.type === "redflag" ? "redflags" : "interventions";
 
     try {
-      const response = await fetch(`http://localhost:5000/${endpoint}/${report.id}`, {
+      const response = await fetch(`https://ireporter-2-6rr9.onrender.com/${endpoint}/${report.id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -148,14 +148,14 @@ const AllReports = () => {
                   <p><strong>Updated At:</strong> {new Date(report.updated_at).toLocaleString()}</p>
                   {report.image_url && (
                     <img
-                      src={`http://localhost:5000/uploads/${report.image_url}`}
+                      src={`https://ireporter-2-6rr9.onrender.com/uploads/${report.image_url}`}
                       alt="Report"
                       className="report-image"
                     />
                   )}
                   {report.video_url && (
                     <video
-                      src={`http://localhost:5000/uploads/${report.video_url}`}
+                      src={`https://ireporter-2-6rr9.onrender.com/uploads/${report.video_url}`}
                       controls
                       className="report-video"
                     />
