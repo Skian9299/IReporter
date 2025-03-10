@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from flask_cors import CORS, cross_origin
 from flask_jwt_extended import (
     create_access_token, jwt_required, get_jwt
 )
@@ -6,10 +7,8 @@ from models import db, User
 
 auth_bp = Blueprint('auth', __name__)  # Define blueprint first
 CORS(auth_bp)  # Apply CORS to the entire auth blueprint
-
 # In-memory store for revoked tokens (for demonstration purposes)
 blacklist = set()
-
 @auth_bp.route('/register', methods=['POST'])
 @cross_origin()
 def register():
@@ -44,7 +43,7 @@ def login():
         return jsonify({"error": "Invalid email or password"}), 401
 
      # Create access token
-    access_token = create_access_token(identity=user.id)
+    access_token = create_access_token(identity=str(user.id))
 
     return jsonify(
         access_token=access_token,

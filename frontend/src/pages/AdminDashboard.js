@@ -16,93 +16,95 @@ const AdminDashboard = () => {
   useEffect(() => {
     fetchUserEmail(); // Fetch user email first
     fetchReports();   // Then fetch reports
-}, []);
+  }, []);
 
-const fetchUserEmail = async () => {
+  const fetchUserEmail = async () => {
     try {
-        const token = localStorage.getItem("token");
-        const response = await axios.get("http://127.0.0.1:5000/auth/me", {
-            headers: { Authorization: `Bearer ${token}` },
-        });
+      const token = localStorage.getItem("token");
+      const response = await axios.get("http://127.0.0.1:5000/auth/email", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-        if (response.data && response.data.email) {
-            setUserEmail(response.data.email);
-            console.log("✅ User email fetched:", response.data.email);
-        } else {
-            console.error("❌ No email found in response:", response.data);
-        }
+      if (response.data && response.data.email) {
+        setUserEmail(response.data.email);
+        console.log("✅ User email fetched:", response.data.email);
+      } else {
+        console.error("❌ No email found in response:", response.data);
+      }
     } catch (error) {
-        console.error("❌ Error fetching user email:", error);
+      console.error("❌ Error fetching user email:", error);
     }
-};
+  };
 
-const fetchReports = async () => {
+  const fetchReports = async () => {
     try {
-        const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token");
+      const response = await axios.get("http://127.0.0.1:5000/reports", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-        // Fetch red flags and interventions
-        const [redflagsResponse, interventionsResponse] = await Promise.all([
-            axios.get("http://127.0.0.1:5000/redflags", {
-                headers: { Authorization: `Bearer ${token}` },
-            }),
-            axios.get("http://127.0.0.1:5000/interventions", {
-                headers: { Authorization: `Bearer ${token}` },
-            }),
-        ]);
-      // Map each response to add a category and a date property (from created_at)
-      const redflags = redflagsResponse.data.map((report) => ({
-        ...report,
-        category: "Red Flag",
-        date: report.created_at,
-      }));
-      const interventions = interventionsResponse.data.map((report) => ({
-        ...report,
-        category: "Intervention",
-        date: report.created_at,
-      }));
-      const combinedReports = [...redflags, ...interventions];
-      setReports(combinedReports);
-      setFilteredReports(combinedReports);
+      if (response.data) {
+        // Merge red flags and interventions into a single array with category labels
+        const redflags = response.data.redflags.map(report => ({
+          ...report,
+          category: "Red Flag",
+          date: report.created_at,
+        }));
+
+        const interventions = response.data.interventions.map(report => ({
+          ...report,
+          category: "Intervention",
+          date: report.created_at,
+        }));
+
+        const combinedReports = [...redflags, ...interventions];
+
+        setReports(combinedReports);
+        setFilteredReports(combinedReports);
+      }
     } catch (error) {
       console.error("Error fetching reports:", error.message || error);
       setError("Error fetching reports");
     }
   };
 
+  // Ensure filter logic works with updated structure
   const filterReports = (type) => {
     setFilterType(type);
     if (type === "all") {
       setFilteredReports(reports);
     } else {
-      setFilteredReports(reports.filter((report) => report.category === type));
+      setFilteredReports(reports.filter(report => report.category === type));
     }
   };
 
+
   // (Status update and email notification function remains unchanged)
-  const updateStatus = async (reportId, status, userEmail) => {
+  const updateStatus = async (reportId, status, userEmail, category) => {
     try {
       const token = localStorage.getItem("token");
+      const endpoint = category === "Red Flag" ? `http://127.0.0.1:5000/redflags/${reportId}` : `http://127.0.0.1:5000/interventions/${reportId}`;
       console.log("🔍 Sending Token:", token);  // Debugging
       console.log("🔍 User Email:", userEmail);  // Debugging
       console.log("🔍 Sending Email Payload:", { email: userEmail, status: status, report_id: reportId });
-  
-      await axios.patch(
-        `http://127.0.0.1:5000/reports/${reportId}/status`,
-        { status: status.toUpperCase() },
+
+      await axios.put(
+        endpoint,
+        { status: status.toLowerCase() },
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         }
       );
-  
+
       // Send email notification
       await axios.post(
-        "http://127.0.0.1:5000/send-email",
+        "http://127.0.0.1:5000/send-mail",
         {
-          email: userEmail, 
-          status: status, 
-          report_id: reportId, 
+          email: userEmail,
+          status: status,
+          report_id: reportId,
         },
         {
           headers: {
@@ -111,14 +113,14 @@ const fetchReports = async () => {
           },
         }
       );
-  
+
       fetchReports();
     } catch (error) {
       console.error("Error updating status:", error.message || error);
     }
-  }; 
-  
-      
+  };
+
+
 
   const handleProfilePicChange = (event) => {
     const file = event.target.files[0];
@@ -189,23 +191,30 @@ const fetchReports = async () => {
                   <td>{new Date(report.date).toLocaleString()}</td>
                   <td>{report.category}</td>
                   <td>
-                    <button
-                      onClick={() =>
-                        updateStatus(report.id, "RESOLVED", report.userEmail)
-                      }
-                      className="resolved-btn"
-                    >
-                      Resolved
-                    </button>
-                    <button
-                      onClick={() =>
-                        updateStatus(report.id, "REJECTED", report.userEmail)
-                      }
-                      className="rejected-btn"
-                    >
-                      Rejected
-                    </button>
+                    {report.status !== "resolved" || report.status !== "rejected" ? (
+                      <>
+                      <button
+                        onClick={() =>
+                          updateStatus(report.id, "RESOLVED", userEmail, report.category)
+                        }
+                        className="resolved-btn"
+                      >
+                        Resolved
+                      </button>
+                      <button
+                        onClick={() =>
+                          updateStatus(report.id, "REJECTED", userEmail, report.category)
+                        }
+                        className="rejected-btn"
+                      >
+                        Rejected
+                      </button>
+                    </>
+                    ) : (
+                      <span>{report.status}</span>
+                    )}
                   </td>
+
                 </tr>
               ))
             ) : (

@@ -9,7 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import AllReports from "./pages/AllReports";
 import AdminDashboard from "./pages/AdminDashboard";
 import PasswordReset from "./pages/PasswordReset";
-
+import EditReport from "./pages/Edit report";
 function Layout() {
   const location = useLocation();
   const hideNavbar = location.pathname === "/admindashboard"; 
@@ -27,7 +27,7 @@ function Layout() {
         <Route path="/admindashboard" element={<AdminDashboard />} />
         <Route path="/forgot-password" element={<PasswordReset />} />
         <Route path="/admin-forgot-password" element={<PasswordReset />} />
-        
+        <Route path="/edit-report/:id" element={<EditReport/>}/>
 
       </Routes>
     </>

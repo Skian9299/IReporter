@@ -3,7 +3,9 @@
   font-family: Arial, sans-serif;
   margin-top: 80px; /* Space for the fixed header */
 }
-
+.report-box {
+    background: #00800052;
+}
 /* HEADER SECTION */
 .dashboard-header {
   display: flex;
