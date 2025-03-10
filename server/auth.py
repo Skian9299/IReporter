@@ -48,8 +48,7 @@ def login():
         return jsonify({"error": "Invalid email or password"}), 401
 
     # Convert user.id to string before passing as identity
-    access_token = create_access_token(identity=user.email)  # Use email as identity
- 
+    access_token = create_access_token(identity=str(user.id)) 
 
     return jsonify(
         access_token=access_token,
