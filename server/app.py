@@ -10,11 +10,10 @@ from auth import auth_bp, blacklist
 from flask_jwt_extended import JWTManager, get_jwt_identity, jwt_required
 from models import db, Intervention, RedFlag, Status, User
 
-
 # Initialize Flask app
 app = Flask(__name__)
 
-# CORS configuration: apply to the entire app with credentials and allowed origins.
+# CORS configuration
 CORS(app)
 
 # JWT Manager initialization
@@ -32,110 +31,214 @@ app.config['JWT_ACCESS_TOKEN_EXPIRES'] = False
 db.init_app(app)
 migrate = Migrate(app, db)
 
-print(app.url_map)
-
-# Register the authentication blueprint
+# Register blueprints
 app.register_blueprint(auth_bp, url_prefix='/auth')
+
 # Flask-Mail configuration
 def setup_mail(app):
     app.config["MAIL_SERVER"] = "smtp.gmail.com"
     app.config["MAIL_PORT"] = 587
     app.config["MAIL_USE_TLS"] = True
-    app.config["MAIL_USERNAME"] = "kamalabdi042@gmail.com"  # Set in .env
-    app.config["MAIL_PASSWORD"] = "vdwa vejv ylts bxbb"  # Set in .env
+    app.config["MAIL_USERNAME"] = "kamalabdi042@gmail.com"
+    app.config["MAIL_PASSWORD"] = "vdwa vejv ylts bxbb"
     app.config["MAIL_DEFAULT_SENDER"] = "kamalabdi042@gmail.com"
-
     mail = Mail(app)
     return mail
 
-# Initialize mail inside app.py
 mail = setup_mail(app)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
 # -------------------------
-# RedFlag Blueprint and Routes
+# RedFlag Routes
 # -------------------------
 
-@app.route('/redflags', methods=['POST'])
+@app.route('/redflags', methods=['GET', 'POST'])
 @cross_origin(origin="*", supports_credentials=True)
 @jwt_required()
-def create_redflag():
-    current_user_id = get_jwt_identity()
-    data = request.get_json()
-    
-    if not data:
-        return jsonify({'error': 'Missing JSON data'}), 400
-
-    for field in ['title', 'description', 'location']:
-        if field not in data or not data[field]:
-            return jsonify({'error': f'Missing required field: {field}'}), 400
-
-    try:
-        latitude = float(data['latitude']) if data.get('latitude') is not None else None
-        longitude = float(data['longitude']) if data.get('longitude') is not None else None
-    except ValueError:
-        return jsonify({'error': 'Latitude and longitude must be numbers'}), 400
-
-    redflag = RedFlag(
-        title=data['title'],
-        description=data['description'],
-        location=data['location'],
-        latitude=latitude,
-        longitude=longitude,
-        image_url=data.get('image_url'),
-        user_id=current_user_id
-    )
-    db.session.add(redflag)
-    db.session.commit()
-    return jsonify(redflag.to_dict()), 201
+def handle_redflags():
+    if request.method == 'GET':
+        redflags = RedFlag.query.all()
+        return jsonify([r.to_dict() for r in redflags]), 200
+    elif request.method == 'POST':
+        current_user_id = get_jwt_identity()
+        data = request.get_json()
         
+        if not data:
+            return jsonify({'error': 'Missing JSON data'}), 400
 
-@app.route('/redflags/<int:id>', methods=['PUT'])
+        required_fields = ['title', 'description', 'location']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                return jsonify({'error': f'Missing required field: {field}'}), 400
+
+        try:
+            latitude = float(data.get('latitude')) if data.get('latitude') else None
+            longitude = float(data.get('longitude')) if data.get('longitude') else None
+        except ValueError:
+            return jsonify({'error': 'Latitude and longitude must be numbers'}), 400
+
+        redflag = RedFlag(
+            title=data['title'],
+            description=data['description'],
+            location=data['location'],
+            latitude=latitude,
+            longitude=longitude,
+            image_url=data.get('image_url'),
+            user_id=current_user_id
+        )
+        db.session.add(redflag)
+        db.session.commit()
+        return jsonify(redflag.to_dict()), 201
+
+@app.route('/redflags/<int:id>', methods=['GET', 'PUT', 'DELETE'])
 @jwt_required()
 @cross_origin(origin="*", supports_credentials=True)
-def edit_redflag(id):
+def manage_redflag(id):
+    redflag = RedFlag.query.get_or_404(id)
     current_user_id = get_jwt_identity()
-    redflag = RedFlag.query.get_or_404(id)
-    data = request.get_json()
-    if not data:
-        return jsonify({'error': 'Missing JSON data.'}), 400
 
-    if 'title' in data:
-        redflag.title = data['title']
-    if 'description' in data:
-        redflag.description = data['description']
-    if 'location' in data:
-        redflag.location = data['location']
-    if 'latitude' in data:
-        try:
-            redflag.latitude = float(data['latitude'])
-        except ValueError:
-            return jsonify({'error': 'Latitude must be a number.'}), 400
-    if 'longitude' in data:
-        try:
-            redflag.longitude = float(data['longitude'])
-        except ValueError:
-            return jsonify({'error': 'Longitude must be a number.'}), 400
-    if 'image_url' in data:
-        redflag.image_url = data['image_url']
-    if 'status' in data:
-        try:
-            redflag.status = Status(data['status'])
-        except ValueError:
-            return jsonify({'error': 'Invalid status value.'}), 400
+    if request.method == 'GET':
+        return jsonify(redflag.to_dict()), 200
+    
+    elif request.method == 'PUT':
+        if redflag.user_id != current_user_id:
+            return jsonify({'error': 'Unauthorized access.'}), 403
 
-    db.session.commit()
-    return jsonify(redflag.to_dict()), 200
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Missing JSON data.'}), 400
 
-@app.route('/redflags/<int:id>', methods=['GET'])
+        # Update fields
+        fields = ['title', 'description', 'location', 'image_url']
+        for field in fields:
+            if field in data:
+                setattr(redflag, field, data[field])
+
+        # Handle coordinates
+        try:
+            if 'latitude' in data:
+                redflag.latitude = float(data['latitude'])
+            if 'longitude' in data:
+                redflag.longitude = float(data['longitude'])
+        except ValueError:
+            return jsonify({'error': 'Coordinates must be numbers.'}), 400
+
+        # Handle status
+        if 'status' in data:
+            try:
+                redflag.status = Status(data['status'])
+            except ValueError:
+                return jsonify({'error': 'Invalid status value.'}), 400
+
+        db.session.commit()
+        return jsonify(redflag.to_dict()), 200
+    
+    elif request.method == 'DELETE':
+        if redflag.user_id != current_user_id:
+            return jsonify({'error': 'Unauthorized access.'}), 403
+
+        db.session.delete(redflag)
+        db.session.commit()
+        return jsonify({'message': 'Red flag deleted successfully.'}), 200
+
+# -------------------------
+# Intervention Routes
+# -------------------------
+
+@app.route('/interventions', methods=['GET', 'POST'])
+@cross_origin(origin="*", supports_credentials=True)
+@jwt_required()
+def handle_interventions():
+    if request.method == 'GET':
+        interventions = Intervention.query.all()
+        return jsonify([i.to_dict() for i in interventions]), 200
+    elif request.method == 'POST':
+        current_user_id = get_jwt_identity()
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'Missing JSON data'}), 400
+
+        required_fields = ['title', 'description', 'location']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                return jsonify({'error': f'Missing required field: {field}'}), 400
+
+        try:
+            latitude = float(data.get('latitude')) if data.get('latitude') else None
+            longitude = float(data.get('longitude')) if data.get('longitude') else None
+        except ValueError:
+            return jsonify({'error': 'Latitude and longitude must be numbers'}), 400
+
+        intervention = Intervention(
+            title=data['title'],
+            description=data['description'],
+            location=data['location'],
+            latitude=latitude,
+            longitude=longitude,
+            image_url=data.get('image_url'),
+            user_id=current_user_id
+        )
+        db.session.add(intervention)
+        db.session.commit()
+        return jsonify(intervention.to_dict()), 201
+
+@app.route('/interventions/<int:id>', methods=['GET', 'PUT', 'DELETE'])
 @jwt_required()
 @cross_origin(origin="*", supports_credentials=True)
-def get_redflag(id):
-    redflag = RedFlag.query.get_or_404(id)
-    return jsonify(redflag.to_dict()), 200
+def manage_intervention(id):
+    intervention = Intervention.query.get_or_404(id)
+    current_user_id = get_jwt_identity()
 
+    if request.method == 'GET':
+        return jsonify(intervention.to_dict()), 200
+    
+    elif request.method == 'PUT':
+        if intervention.user_id != current_user_id:
+            return jsonify({'error': 'Unauthorized access.'}), 403
+
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Missing JSON data.'}), 400
+
+        # Update fields
+        fields = ['title', 'description', 'location', 'image_url']
+        for field in fields:
+            if field in data:
+                setattr(intervention, field, data[field])
+
+        # Handle coordinates
+        try:
+            if 'latitude' in data:
+                intervention.latitude = float(data['latitude'])
+            if 'longitude' in data:
+                intervention.longitude = float(data['longitude'])
+        except ValueError:
+            return jsonify({'error': 'Coordinates must be numbers.'}), 400
+
+        # Handle status
+        if 'status' in data:
+            try:
+                intervention.status = Status(data['status'])
+            except ValueError:
+                return jsonify({'error': 'Invalid status value.'}), 400
+
+        db.session.commit()
+        return jsonify(intervention.to_dict()), 200
+    
+    elif request.method == 'DELETE':
+        if intervention.user_id != current_user_id:
+            return jsonify({'error': 'Unauthorized access.'}), 403
+
+        db.session.delete(intervention)
+        db.session.commit()
+        return jsonify({'message': 'Intervention deleted successfully.'}), 200
+
+# -------------------------
+# Other Routes
+# -------------------------
 
 @app.route("/send-mail", methods=["POST"])
 @cross_origin()
@@ -156,61 +259,8 @@ def send_mail():
         mail.send(msg)
 
         return jsonify({"message": f"Email sent to {email}"}), 200
-
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-@app.route('/redflags/<int:id>', methods=['DELETE'])
-@jwt_required()
-@cross_origin(origin="*", supports_credentials=True)
-def delete_redflag(id):
-    current_user_id = get_jwt_identity()
-    redflag = RedFlag.query.get_or_404(id)
-    
-    if redflag.user_id != current_user_id:
-        return jsonify({'error': 'Unauthorized access.'}), 403
-
-    db.session.delete(redflag)
-    db.session.commit()
-    return jsonify({'message': 'Red flag deleted successfully.'}), 200
-
-# Register the redflag blueprint with URL prefix "/redflags"
-
-# -------------------------
-# Intervention Routes
-# -------------------------
-@app.route('/interventions', methods=['POST'])
-@cross_origin(origin="*", supports_credentials=True)
-@jwt_required()
-def create_intervention():
-    current_user_id = get_jwt_identity()
-    data = request.get_json()
-    
-    if not data:
-        return jsonify({'error': 'Missing JSON data'}), 400
-
-    for field in ['title', 'description', 'location']:
-        if field not in data or not data[field]:
-            return jsonify({'error': f'Missing required field: {field}'}), 400
-
-    try:
-        latitude = float(data['latitude']) if data.get('latitude') is not None else None
-        longitude = float(data['longitude']) if data.get('longitude') is not None else None
-    except ValueError:
-        return jsonify({'error': 'Latitude and longitude must be numbers'}), 400
-
-    intervention = Intervention(
-        title=data['title'],
-        description=data['description'],
-        location=data['location'],
-        latitude=latitude,
-        longitude=longitude,
-        image_url=data.get('image_url'),
-        user_id=current_user_id
-    )
-    db.session.add(intervention)
-    db.session.commit()
-    return jsonify(intervention.to_dict()), 201
 
 @app.route('/auth/email', methods=['GET'])
 @jwt_required()
@@ -219,79 +269,10 @@ def get_mail():
     user = User.query.filter_by(id=current_user).first()
     return jsonify({'message': 'success', 'email': user.email}), 200
 
-
-@app.route('/interventions/<int:id>', methods=['GET'])
-@jwt_required
-def get_single_interventions(id): 
-    """Get a single intervention report"""
-    intervention = Intervention.query.filter_by(id=id).first_or_404()
-    return jsonify(intervention.to_dict())
-
-
-@app.route('/interventions/<int:id>', methods=['PUT'])
-@cross_origin(origin="*", supports_credentials=True)
-@jwt_required()
-def edit_intervention(id):
-    current_user_id = get_jwt_identity()
-    intervention = Intervention.query.get_or_404(id)
-
-    data = request.get_json()
-    if not data:
-        return jsonify({'error': 'Missing JSON data.'}), 400
-
-    if 'title' in data:
-        intervention.title = data['title']
-    if 'description' in data:
-        intervention.description = data['description']
-    if 'location' in data:
-        intervention.location = data['location']
-    if 'latitude' in data:
-        try:
-            intervention.latitude = float(data['latitude'])
-        except ValueError:
-            return jsonify({'error': 'Latitude must be a number.'}), 400
-    if 'longitude' in data:
-        try:
-            intervention.longitude = float(data['longitude'])
-        except ValueError:
-            return jsonify({'error': 'Longitude must be a number.'}), 400
-    if 'image_url' in data:
-        intervention.image_url = data['image_url']
-    if 'status' in data:
-        try:
-            intervention.status = Status(data['status'])
-        except ValueError:
-            return jsonify({'error': 'Invalid status value.'}), 400
-
-    db.session.commit()
-    return jsonify(intervention.to_dict()), 200
-
-@app.route('/interventions/<int:id>', methods=['GET'])
-@jwt_required()
-@cross_origin(origin="*", supports_credentials=True)
-def get_intervention(id):
-    intervention = Intervention.query.get_or_404(id)
-    return jsonify(intervention.to_dict()), 200
-
-@app.route('/interventions/<int:id>', methods=['DELETE'])
-@cross_origin(origin="*", supports_credentials=True)
-@jwt_required()
-def delete_intervention(id):
-    current_user_id = get_jwt_identity()
-    intervention = Intervention.query.get_or_404(id)
-
-    db.session.delete(intervention)
-    db.session.commit()
-    return jsonify({'message': 'Intervention deleted successfully.'}), 200
-
-# -------------------------
-# Combined Reports Route
-# -------------------------
 @app.route('/reports', methods=['GET'])
 @cross_origin(origin="*", supports_credentials=True)
 @jwt_required()
-def get_reports():
-    current_user_id = get_jwt_identity()
+def get_all_reports():
     redflags = RedFlag.query.all()
     interventions = Intervention.query.all()
     return jsonify({
@@ -299,9 +280,6 @@ def get_reports():
         "interventions": [i.to_dict() for i in interventions]
     }), 200
 
-
-
-# print(app.url_map)
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
