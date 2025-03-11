@@ -41,17 +41,17 @@ class RedFlag(db.Model, SerializerMixin):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=False)
-    location = db.Column(db.String(255), nullable=False)
-    latitude = db.Column(db.Float)
-    longitude = db.Column(db.Float)
-    status = db.Column(SQLEnum(Status), default=Status.DRAFT, nullable=False)
-    image_url = db.Column(db.String(255), nullable=True)
-
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    status = db.Column(db.String(50), default='draft')  # draft, under investigation, rejected, resolved
+    location = db.Column(db.String(255), nullable=True)
+    latitude = db.Column(db.Float, nullable=True)
+    longitude = db.Column(db.Float, nullable=True)
+    image_url = db.Column(db.String(8000), nullable= True) 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    image_url = db.Column(db.String(8000)) 
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
+# Intervention Model
 class Intervention(db.Model, SerializerMixin):
     """Represents an intervention reported by a user."""
     __tablename__ = 'interventions'
@@ -59,10 +59,11 @@ class Intervention(db.Model, SerializerMixin):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=False)
-    latitude = db.Column(db.Float)
-    longitude = db.Column(db.Float)
-    location = db.Column(db.String(255), nullable=False)
-    status = db.Column(SQLEnum(Status), default=Status.DRAFT, nullable=False)
-    image_url = db.Column(db.String(255), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)  # Allow NULL for user_id
+    status = db.Column(db.String(50), default='draft')
+    location = db.Column(db.String(255), nullable=True)
+    latitude = db.Column(db.Float, nullable=True)
+    longitude = db.Column(db.Float, nullable=True)
+    image_url = db.Column(db.String(8000), nullable= True) 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
