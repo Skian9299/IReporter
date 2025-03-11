@@ -78,20 +78,6 @@ const Dashboard = () => {
   };
 
   const submitRedFlag = async () => {
-    if (!redFlagTitle || !redFlagDescription || !userLocation || !latitude || !longitude) {
-      setError("Please fill in all required fields for the red flag report.");
-      return;
-    }
-  
-    const reportData = {
-      title: redFlagTitle,
-      description: redFlagDescription,
-      location: userLocation,
-      latitude: parseFloat(latitude),
-      longitude: parseFloat(longitude),
-      image_url: redFlagImageUrl
-    };
-  
     try {
       const response = await fetch("https://ireporter-2-6rr9.onrender.com/redflags", {
         method: "POST",
@@ -99,26 +85,30 @@ const Dashboard = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        credentials: 'include', 
-        body: JSON.stringify(reportData),
+        body: JSON.stringify({
+          title: redFlagTitle,
+          description: redFlagDescription,
+          latitude: parseFloat(latitude),
+          longitude: parseFloat(longitude),
+          location: userLocation,
+          image_url: redFlagImageUrl
+        }),
       });
   
-      const data = await response.json();
-      if (response.ok) {
-        alert("Red flag report submitted successfully!");
-        setRedFlagTitle("");
-        setRedFlagDescription("");
-        setRedFlagImageUrl("");
-        setError("");
-      } else {
-        setError(data.error || "Failed to submit red flag report.");
+      const responseText = await response.text();
+      
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status} - ${responseText}`);
       }
+  
+      const data = JSON.parse(responseText);
+      // Handle success...
+  
     } catch (error) {
-      console.error("Error submitting red flag:", error);
-      setError("An error occurred while submitting the red flag.");
+      console.error('Submission error:', error);
+      setError(error.message);
     }
   };
-  
 
   const submitIntervention = async () => {
     if (!interventionTitle || !interventionDescription || !userLocation || !latitude || !longitude) {
