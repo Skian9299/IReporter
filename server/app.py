@@ -10,6 +10,7 @@ from auth import auth_bp, blacklist
 from flask_jwt_extended import JWTManager, get_jwt_identity, jwt_required
 from models import db, Intervention, RedFlag, Status, User
 
+
 # Initialize Flask app
 app = Flask(__name__)
 
@@ -23,12 +24,9 @@ jwt = JWTManager(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///reports.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif'}
-app.config['SECRET_KEY'] = 'your-secret-key-here'
-
-# Ensure upload directory exists
-if not os.path.exists(app.config['UPLOAD_FOLDER']):
-    os.makedirs(app.config['UPLOAD_FOLDER'])
+app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'avi'}
+app.config['SECRET_KEY'] = 'supersecretkey'
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = False  
 
 # Initialize extensions
 db.init_app(app)
@@ -52,7 +50,6 @@ def setup_mail(app):
 
 # Initialize mail inside app.py
 mail = setup_mail(app)
-
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
@@ -101,7 +98,6 @@ def create_redflag():
 def edit_redflag(id):
     current_user_id = get_jwt_identity()
     redflag = RedFlag.query.get_or_404(id)
-    
     data = request.get_json()
     if not data:
         return jsonify({'error': 'Missing JSON data.'}), 400
@@ -224,6 +220,13 @@ def get_mail():
     return jsonify({'message': 'success', 'email': user.email}), 200
 
 
+@app.route('/interventions/<int:id>', methods=['GET'])
+@jwt_required
+def get_single_interventions(id): 
+    """Get a single intervention report"""
+    intervention = Intervention.query.filter_by(id=id).first_or_404()
+    return jsonify(intervention.to_dict())
+
 
 @app.route('/interventions/<int:id>', methods=['PUT'])
 @cross_origin(origin="*", supports_credentials=True)
@@ -299,6 +302,7 @@ def get_reports():
 
 
 # print(app.url_map)
-
 if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
     app.run(debug=True)

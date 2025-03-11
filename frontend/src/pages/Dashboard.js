@@ -51,13 +51,11 @@ const Dashboard = () => {
       setError("Geolocation is not supported by your browser.");
     }
   };
-
   const submitReport = async () => {
     if (!title || !description || !location || !latitude || !longitude) {
       setError("Please fill in all required fields.");
       return;
     }
-
     const payload = {
       title,
       description,
