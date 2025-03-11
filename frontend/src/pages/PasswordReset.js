@@ -19,7 +19,7 @@ const PasswordReset = () => {
     }
 
     try {
-      const response = await fetch("https://ireporter-2-6rr9.onrender.com/auth/reset-password", {
+      const response = await fetch("https://ireporter-1-50ya.onrender.com/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 

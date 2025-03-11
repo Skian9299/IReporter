@@ -70,7 +70,7 @@ const SignUp = () => {
     setSuccessMessage("");
 
     try {
-      const response = await axios.post("http://127.0.0.1:5000/auth/register", {
+      const response = await axios.post("https://ireporter-1-50ya.onrender.com/auth/register", {
         first_name: formData.first_name,
         last_name: formData.last_name,
         email: formData.email,
