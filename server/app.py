@@ -270,7 +270,6 @@ def get_intervention(id):
     intervention = Intervention.query.get_or_404(id)
     return jsonify(intervention.to_dict()), 200
 
-
 @app.route('/interventions/<int:id>', methods=['DELETE'])
 @cross_origin(origin="*", supports_credentials=True)
 @jwt_required()

@@ -15,6 +15,7 @@ const EditReport = () => {
   const [media, setMedia] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
   useEffect(() => {
     const fetchReport = async () => {
       try {
@@ -22,17 +23,15 @@ const EditReport = () => {
         const response = await fetch(`http://localhost:5000/${type}s/${id}`, {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
-  
+
         if (!response.ok) throw new Error("Failed to fetch report");
-  
+        
         const data = await response.json();
-        console.log("Fetched report data:", data); // Debugging line
-  
         if (data.status !== 'draft') {
           setError("This report can no longer be edited");
           return;
         }
-  
+
         setReport(data);
         setTitle(data.title);
         setDescription(data.description);
@@ -45,10 +44,10 @@ const EditReport = () => {
         setLoading(false);
       }
     };
-  
+
     fetchReport();
   }, [id, type]);
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title || !description) {
@@ -73,7 +72,7 @@ const EditReport = () => {
       // Update location if changed
       if (latitude !== report.latitude || longitude !== report.longitude) {
         const locationResponse = await fetch(`http://localhost:5000/${type}s/${id}/location`, {
-          method: "PUT",
+          method: "PATCH",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("token")}`,

@@ -118,14 +118,6 @@ button:disabled {
 .error {
   color: #f44336;
 }
-.dashboard-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem;
-  background: #f8f9fa;
-  margin-bottom: 2rem;
-}
 
 .user-info {
   display: flex;
@@ -155,12 +147,6 @@ button:disabled {
   padding: 0 1rem;
 }
 
-.report-box {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
 
 .report-actions {
   display: flex;
