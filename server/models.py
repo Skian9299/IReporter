@@ -44,7 +44,7 @@ class RedFlag(db.Model, SerializerMixin):
     longitude = db.Column(db.Float, nullable=True)
     image_url = db.Column(db.String(200), nullable= True) 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    image_url = db.Column(db.String(200)) 
+    image_url = db.Column(db.String(8000)) 
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     media = db.relationship('Media', backref='redflag', lazy=True)
@@ -62,7 +62,7 @@ class Intervention(db.Model, SerializerMixin):
     location = db.Column(db.String(255), nullable=True)
     latitude = db.Column(db.Float, nullable=True)
     longitude = db.Column(db.Float, nullable=True)
-    image_url = db.Column(db.String(200), nullable= True) 
+    image_url = db.Column(db.String(8000), nullable= True) 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -76,7 +76,7 @@ class Media(db.Model, SerializerMixin):
     record_id = db.Column(db.Integer, db.ForeignKey('redflags.id'), nullable=True)
     intervention_id = db.Column(db.Integer, db.ForeignKey('interventions.id'), nullable=True)
     media_type = db.Column(db.String(10), nullable=False)  # image or video
-    file_url = db.Column(db.String(255), nullable=False)
+    file_url = db.Column(db.String(8000), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 # Notification Model

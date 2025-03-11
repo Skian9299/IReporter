@@ -10,10 +10,12 @@ from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from auth import auth_bp, blacklist
-from flask_jwt_extended import JWTManager
+from flask_jwt_extended import JWTManager, jwt_required
 from models import User, db, Intervention, RedFlag
 from flask_mail import Mail
 from flask_cors import CORS, cross_origin
+from flask import Flask, jsonify, request
+
 
 
 
@@ -57,13 +59,12 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'avi'}
 app.config['SECRET_KEY'] = 'supersecretkey'
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = False  # For development only
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = False  
 
 # Initialize extensions
 # db = SQLAlchemy(app)
 db.init_app(app)
 migrate = Migrate(app, db)
-# Initialize JWT
 jwt = JWTManager(app)
 UPLOAD_FOLDER = "uploads"  # Ensure this folder exists
 
@@ -92,16 +93,16 @@ from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
 
 def token_required(f):
     @wraps(f)
+    @jwt_required()
     def decorated(*args, **kwargs):
         try:
-            verify_jwt_in_request()  # Verifies the JWT exists and is valid
-            current_user_id = get_jwt_identity()  # Retrieves the user ID from the token
+            current_user_id = int(get_jwt_identity())
+            return f(current_user_id, *args, **kwargs)
         except Exception as e:
-            return jsonify({'message': 'Invalid token!', 'error': str(e)}), 401
-        
-        return f(current_user_id, *args, **kwargs)
-    
+            return jsonify(error="Invalid token"), 401
     return decorated
+
+
 
 # def admin_required(f):
 #     @wraps(f)
@@ -167,7 +168,7 @@ def get_redflags(current_user_id):
 
 @app.route('/redflags/<int:id>', methods=['GET'])
 @token_required
-def get_redflag(current_user_id, id):
+def get_single_redflag(current_user_id, id): 
     """Get a single red flag report"""
     redflag = RedFlag.query.filter_by(id=id, user_id=current_user_id).first_or_404()
     return jsonify(redflag.to_dict())
@@ -246,7 +247,7 @@ def get_interventions(current_user_id):
 
 @app.route('/interventions/<int:id>', methods=['GET'])
 @token_required
-def get_intervention(current_user_id, id):
+def get_single_interventions(current_user_id, id): 
     """Get a single intervention report"""
     intervention = Intervention.query.filter_by(id=id, user_id=current_user_id).first_or_404()
     return jsonify(intervention.to_dict())
@@ -362,7 +363,7 @@ def delete_intervention(current_user_id, id):
 #     except ValueError:
 #         valid_statuses = [e.value for e in StatusEnum]
 #         return jsonify({'error': f'Invalid status. Valid values: {valid_statuses}'}), 400
-# if __name__ == '__main__':
+if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     app.run(debug=True)
