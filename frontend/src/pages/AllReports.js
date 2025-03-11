@@ -34,7 +34,7 @@ const AllReports = () => {
       setLoading(true);
       setError(null);
   
-      const response = await fetch("http://localhost:5000/reports", {
+      const response = await fetch("https://ireporter-1-50ya.onrender.com/reports", {
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
         signal: controller.signal,
@@ -87,7 +87,7 @@ const AllReports = () => {
   
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:5000/${report.type}s/${report.id}`, {
+      const response = await fetch(`https://ireporter-1-50ya.onrender.com/${report.type}s/${report.id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });

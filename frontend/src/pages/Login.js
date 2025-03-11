@@ -25,7 +25,7 @@ const Login = () => {
 
     try {
       const response = await axios.post(
-        "http://127.0.0.1:5000/auth/login",
+        "https://ireporter-1-50ya.onrender.com/auth/login",
         { email, password },
         { withCredentials: true }
       );
@@ -70,7 +70,7 @@ const Login = () => {
   // Function to fetch protected data using the token
   const fetchProtectedData = async (token) => {
     try {
-      const response = await axios.get("http://127.0.0.1:5000/protected-endpoint", {
+      const response = await axios.get("https://ireporter-1-50ya.onrender.com/protected-endpoint", {
         headers: {
           Authorization: `Bearer ${token}`,
         },

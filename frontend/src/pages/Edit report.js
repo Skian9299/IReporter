@@ -20,7 +20,7 @@ const EditReport = () => {
     const fetchReport = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`http://localhost:5000/${type}s/${id}`, {
+        const response = await fetch(`https://ireporter-1-50ya.onrender.com/${type}s/${id}`, {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         });
 
@@ -58,7 +58,7 @@ const EditReport = () => {
     try {
       setLoading(true);
       // Update main report details
-      const updateResponse = await fetch(`http://localhost:5000/${type}s/${id}`, {
+      const updateResponse = await fetch(`https://ireporter-1-50ya.onrender.com/${type}s/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -71,7 +71,7 @@ const EditReport = () => {
 
       // Update location if changed
       if (latitude !== report.latitude || longitude !== report.longitude) {
-        const locationResponse = await fetch(`http://localhost:5000/${type}s/${id}/location`, {
+        const locationResponse = await fetch(`https://ireporter-1-50ya.onrender.com/${type}s/${id}/location`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -101,7 +101,7 @@ const EditReport = () => {
       const formData = new FormData();
       files.forEach(file => formData.append("file", file));
 
-      const response = await fetch(`http://localhost:5000/${type}s/${id}/media`, {
+      const response = await fetch(`https://ireporter-1-50ya.onrender.com/${type}s/${id}/media`, {
         method: "POST",
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         body: formData,
@@ -189,10 +189,10 @@ const EditReport = () => {
               {media.map((item) => (
                 <div key={item.id} className="media-item">
                   {item.media_type === 'image' ? (
-                    <img src={`http://localhost:5000/uploads/${item.file_url}`} alt="Attachment" />
+                    <img src={`https://ireporter-1-50ya.onrender.com/uploads/${item.file_url}`} alt="Attachment" />
                   ) : (
                     <video controls>
-                      <source src={`http://localhost:5000/uploads/${item.file_url}`} />
+                      <source src={`https://ireporter-1-50ya.onrender.com/uploads/${item.file_url}`} />
                     </video>
                   )}
                 </div>

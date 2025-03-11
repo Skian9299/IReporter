@@ -21,7 +21,7 @@ const AdminDashboard = () => {
   const fetchUserEmail = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get("http://127.0.0.1:5000/auth/email", {
+      const response = await axios.get("https://ireporter-1-50ya.onrender.com/auth/email", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -39,7 +39,7 @@ const AdminDashboard = () => {
   const fetchReports = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get("http://127.0.0.1:5000/reports", {
+      const response = await axios.get("https://ireporter-1-50ya.onrender.com/reports", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -83,7 +83,7 @@ const AdminDashboard = () => {
   const updateStatus = async (reportId, status, userEmail, category) => {
     try {
       const token = localStorage.getItem("token");
-      const endpoint = category === "Red Flag" ? `http://127.0.0.1:5000/redflags/${reportId}` : `http://127.0.0.1:5000/interventions/${reportId}`;
+      const endpoint = category === "Red Flag" ? `https://ireporter-1-50ya.onrender.com/redflags/${reportId}` : `https://ireporter-1-50ya.onrender.com/interventions/${reportId}`;
       console.log("🔍 Sending Token:", token);  // Debugging
       console.log("🔍 User Email:", userEmail);  // Debugging
       console.log("🔍 Sending Email Payload:", { email: userEmail, status: status, report_id: reportId });

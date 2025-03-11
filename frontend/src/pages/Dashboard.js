@@ -68,7 +68,7 @@ const Dashboard = () => {
     const endpoint = reportType === "redflags" ? "redflags" : "interventions";
 
     try {
-      const response = await fetch(`http://localhost:5000/${endpoint}`, {
+      const response = await fetch(`https://ireporter-1-50ya.onrender.com/${endpoint}`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${localStorage.getItem("token")}`,
