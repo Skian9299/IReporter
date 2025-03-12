@@ -36,7 +36,7 @@ def register():
     return jsonify({"msg": "User registered successfully"}), 201
 
 @auth_bp.route('/login', methods=['POST'])
-@cross_origin(supports_credentials=True) 
+@cross_origin(supports_credentials=True)
 def login():
     data = request.get_json()
     email = data.get('email')
@@ -46,8 +46,8 @@ def login():
     if not user or not user.check_password(password):
         return jsonify({"error": "Invalid email or password"}), 401
 
-
-    access_token = create_access_token(identity=str(user.id))
+    # Send integer ID as identity
+    access_token = create_access_token(identity=user.id)  # Remove str() conversion
 
     return jsonify(
         access_token=access_token,
@@ -59,6 +59,7 @@ def login():
             "last_name": user.last_name,
         }
     ), 200
+
 
 
 @auth_bp.route('/logout', methods=['POST'])

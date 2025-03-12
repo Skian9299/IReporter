@@ -273,12 +273,21 @@ def get_mail():
 @cross_origin(origin="*", supports_credentials=True)
 @jwt_required()
 def get_all_reports():
-    redflags = RedFlag.query.all()
-    interventions = Intervention.query.all()
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+
+    if user and getattr(user, 'is_admin', False):  # Check if user is admin
+        redflags = RedFlag.query.all()
+        interventions = Intervention.query.all()
+    else:
+        redflags = RedFlag.query.filter_by(user_id=current_user_id).all()
+        interventions = Intervention.query.filter_by(user_id=current_user_id).all()
+
     return jsonify({
         "redflags": [r.to_dict() for r in redflags],
         "interventions": [i.to_dict() for i in interventions]
     }), 200
+
 
 if __name__ == '__main__':
     with app.app_context():
