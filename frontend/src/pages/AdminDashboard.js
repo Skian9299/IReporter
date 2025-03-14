@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import "./AdminDashboard.css";
@@ -8,33 +8,12 @@ const AdminDashboard = () => {
   const [reports, setReports] = useState([]);
   const [filteredReports, setFilteredReports] = useState([]);
   const [filterType, setFilterType] = useState("all");
-  const [adminName, setAdminName] = useState("Admin");
   const [profilePic, setProfilePic] = useState(localStorage.getItem("adminAvatar") || "");
   const [error, setError] = useState("");
-  const [userEmail, setUserEmail] = useState("");
 
   useEffect(() => {
-    fetchUserEmail(); // Fetch user email first
-    fetchReports();   // Then fetch reports
+    fetchReports();
   }, []);
-
-  const fetchUserEmail = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get("https://ireporter-1-50ya.onrender.com/auth/email", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.data && response.data.email) {
-        setUserEmail(response.data.email);
-        console.log("✅ User email fetched:", response.data.email);
-      } else {
-        console.error("❌ No email found in response:", response.data);
-      }
-    } catch (error) {
-      console.error("❌ Error fetching user email:", error);
-    }
-  };
 
   const fetchReports = async () => {
     try {
@@ -44,83 +23,75 @@ const AdminDashboard = () => {
       });
 
       if (response.data) {
-        // Merge red flags and interventions into a single array with category labels
-        const redflags = response.data.redflags.map(report => ({
+        const processReports = (reports, category) => reports.map(report => ({
           ...report,
-          category: "Red Flag",
+          category,
           date: report.created_at,
+          userEmail: report.user?.email || "unknown@email.com" // Ensure user email exists
         }));
 
-        const interventions = response.data.interventions.map(report => ({
-          ...report,
-          category: "Intervention",
-          date: report.created_at,
-        }));
-
-        const combinedReports = [...redflags, ...interventions];
+        const combinedReports = [
+          ...processReports(response.data.redflags, "Red Flag"),
+          ...processReports(response.data.interventions, "Intervention")
+        ];
 
         setReports(combinedReports);
         setFilteredReports(combinedReports);
       }
     } catch (error) {
-      console.error("Error fetching reports:", error.message || error);
       setError("Error fetching reports");
+      console.error("Fetch error:", error);
     }
   };
 
-  // Ensure filter logic works with updated structure
   const filterReports = (type) => {
     setFilterType(type);
-    if (type === "all") {
-      setFilteredReports(reports);
-    } else {
-      setFilteredReports(reports.filter(report => report.category === type));
-    }
+    setFilteredReports(type === "all" ? reports : reports.filter(report => report.category === type));
   };
 
-
-  // (Status update and email notification function remains unchanged)
-  const updateStatus = async (reportId, status, userEmail, category) => {
+  const updateStatus = async (reportId, status, category) => {
     try {
       const token = localStorage.getItem("token");
-      const endpoint = category === "Red Flag" ? `https://ireporter-1-50ya.onrender.com/redflags/${reportId}` : `https://ireporter-1-50ya.onrender.com/interventions/${reportId}`;
-      console.log("🔍 Sending Token:", token);  // Debugging
-      console.log("🔍 User Email:", userEmail);  // Debugging
-      console.log("🔍 Sending Email Payload:", { email: userEmail, status: status, report_id: reportId });
+      const endpoint = category === "Red Flag" 
+        ? `https://ireporter-1-50ya.onrender.com/redflags/${reportId}`
+        : `https://ireporter-1-50ya.onrender.com/interventions/${reportId}`;
 
-      await axios.put(
+      // Update status
+      await axios.patch(
         endpoint,
         { status: status.toLowerCase() },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // Send email notification
-      await axios.post(
-        "http://127.0.0.1:5000/send-mail",
-        {
-          email: userEmail,
-          status: status,
-          report_id: reportId,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
+      // Find report for email and update local state
+      const updatedReports = reports.map(report => {
+        if (report.id === reportId) {
+          const updated = { ...report, status: status.toLowerCase() };
+          
+          // Send email notification
+          axios.post(
+            "https://ireporter-1-50ya.onrender.com/send-mail",
+            {
+              email: updated.userEmail,
+              status: status.toLowerCase(),
+              report_id: reportId
+            },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
 
-      fetchReports();
+          return updated;
+        }
+        return report;
+      });
+
+      setReports(updatedReports);
+      setFilteredReports(updatedReports);
+
     } catch (error) {
-      console.error("Error updating status:", error.message || error);
+      setError(`Update failed: ${error.response?.data?.error || error.message}`);
+      setTimeout(() => setError(""), 5000);
     }
   };
-
-
 
   const handleProfilePicChange = (event) => {
     const file = event.target.files[0];
@@ -141,7 +112,6 @@ const AdminDashboard = () => {
 
   return (
     <div className="admin-dashboard">
-      {/* Sidebar */}
       <div className="sidebar">
         <div className="admin-info">
           <label htmlFor="profile-upload">
@@ -158,7 +128,7 @@ const AdminDashboard = () => {
             onChange={handleProfilePicChange}
             style={{ display: "none" }}
           />
-          <h3>{adminName}</h3>
+          <h3>Admin Panel</h3>
         </div>
         <button onClick={() => filterReports("all")}>All Reports</button>
         <button onClick={() => filterReports("Red Flag")}>Red Flags</button>
@@ -168,7 +138,6 @@ const AdminDashboard = () => {
         </button>
       </div>
 
-      {/* Reports Table */}
       <div className="reports-table">
         <h2>Latest Reports</h2>
         {error && <p className="error-message">{error}</p>}
@@ -183,49 +152,45 @@ const AdminDashboard = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredReports.length > 0 ? (
-              filteredReports.map((report, index) => (
-                <tr key={report.id}>
-                  <td>{index + 1}</td>
-                  <td>{report.title}</td>
-                  <td>{new Date(report.date).toLocaleString()}</td>
-                  <td>{report.category}</td>
-                  <td>
-                    {report.status !== "resolved" || report.status !== "rejected" ? (
-                      <>
+            {filteredReports.map((report, index) => (
+              <tr key={report.id}>
+                <td>{index + 1}</td>
+                <td>{report.title}</td>
+                <td>{new Date(report.date).toLocaleDateString()}</td>
+                <td>{report.category}</td>
+                <td>
+                  {!["resolved", "rejected"].includes(report.status?.toLowerCase()) ? (
+                    <>
                       <button
-                        onClick={() =>
-                          updateStatus(report.id, "RESOLVED", userEmail, report.category)
-                        }
-                        className="resolved-btn"
+                        onClick={() => updateStatus(report.id, "resolved", report.category)}
+                        className="status-btn resolved"
                       >
-                        Resolved
+                        Resolve
                       </button>
                       <button
-                        onClick={() =>
-                          updateStatus(report.id, "REJECTED", userEmail, report.category)
-                        }
-                        className="rejected-btn"
+                        onClick={() => updateStatus(report.id, "rejected", report.category)}
+                        className="status-btn rejected"
                       >
-                        Rejected
+                        Reject
                       </button>
                     </>
-                    ) : (
-                      <span>{report.status}</span>
-                    )}
-                  </td>
-
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="6" className="no-reports">
-                  No reports available
+                  ) : (
+                    <span className={`status-${report.status}`}>
+                      {report.status}
+                    </span>
+                  )}
                 </td>
               </tr>
-            )}
+            ))}
           </tbody>
         </table>
+        {filteredReports.length === 0 && (
+          <tr>
+            <td colSpan="5" className="no-reports">
+              No reports available
+            </td>
+          </tr>
+        )}
       </div>
     </div>
   );

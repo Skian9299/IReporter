@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
+import axios from "axios";
 import "./EditReport.css";
 
 const EditReport = () => {
@@ -8,10 +9,13 @@ const EditReport = () => {
   const { search } = useLocation();
   const type = new URLSearchParams(search).get("type");
   const [report, setReport] = useState(null);
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [latitude, setLatitude] = useState("");
-  const [longitude, setLongitude] = useState("");
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    latitude: "",
+    longitude: "",
+    location: ""
+  });
   const [media, setMedia] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -20,26 +24,29 @@ const EditReport = () => {
     const fetchReport = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`https://ireporter-1-50ya.onrender.com/${type}s/${id}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        });
+        const response = await axios.get(
+          `https://ireporter-1-50ya.onrender.com/${type}s/${id}`,
+          {
+            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+          }
+        );
 
-        if (!response.ok) throw new Error("Failed to fetch report");
-        
-        const data = await response.json();
-        if (data.status !== 'draft') {
-          setError("This report can no longer be edited");
+        if (response.data.status !== 'draft') {
+          setError("Only draft reports can be edited");
           return;
         }
 
-        setReport(data);
-        setTitle(data.title);
-        setDescription(data.description);
-        setLatitude(data.latitude);
-        setLongitude(data.longitude);
-        setMedia(data.media || []);
+        setReport(response.data);
+        setFormData({
+          title: response.data.title,
+          description: response.data.description,
+          latitude: response.data.latitude,
+          longitude: response.data.longitude,
+          location: response.data.location
+        });
+        setMedia(response.data.media || []);
       } catch (error) {
-        setError(error.message);
+        setError(error.response?.data?.error || error.message);
       } finally {
         setLoading(false);
       }
@@ -50,107 +57,133 @@ const EditReport = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title || !description) {
-      setError("Title and description are required");
-      return;
-    }
+    setLoading(true);
+    setError("");
 
     try {
-      setLoading(true);
-      // Update main report details
-      const updateResponse = await fetch(`https://ireporter-1-50ya.onrender.com/${type}s/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({ title, description }),
-      });
+      const payload = {
+        title: formData.title,
+        description: formData.description,
+        latitude: parseFloat(formData.latitude),
+        longitude: parseFloat(formData.longitude),
+        location: formData.location
+      };
 
-      if (!updateResponse.ok) throw new Error("Failed to update report");
+      const response = await axios.patch(
+        `https://ireporter-1-50ya.onrender.com/${type}s/${id}`,
+        payload,
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+        }
+      );
 
-      // Update location if changed
-      if (latitude !== report.latitude || longitude !== report.longitude) {
-        const locationResponse = await fetch(`https://ireporter-1-50ya.onrender.com/${type}s/${id}/location`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          body: JSON.stringify({ latitude, longitude }),
-        });
-        
-        if (!locationResponse.ok) throw new Error("Failed to update location");
+      if (response.status === 200) {
+        alert("Report updated successfully!");
+        navigate("/reports");
       }
-
-      alert("Report updated successfully!");
-      navigate("/reports");
     } catch (error) {
-      setError(error.message);
+      setError(error.response?.data?.error || "Failed to update report");
     } finally {
       setLoading(false);
     }
   };
 
   const handleMediaUpload = async (e) => {
-    const files = Array.from(e.target.files);
+    const files = e.target.files;
     if (!files.length) return;
 
     try {
       setLoading(true);
       const formData = new FormData();
-      files.forEach(file => formData.append("file", file));
+      Array.from(files).forEach(file => formData.append("media", file));
 
-      const response = await fetch(`https://ireporter-1-50ya.onrender.com/${type}s/${id}/media`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        body: formData,
-      });
+      const response = await axios.post(
+        `https://ireporter-1-50ya.onrender.com/${type}s/${id}/media`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "multipart/form-data"
+          }
+        }
+      );
 
-      if (!response.ok) throw new Error("Media upload failed");
-      
-      const newMedia = await response.json();
-      setMedia(prev => [...prev, ...newMedia]);
+      setMedia(prev => [...prev, ...response.data]);
     } catch (error) {
-      setError(error.message);
+      setError(error.response?.data?.error || "Media upload failed");
     } finally {
       setLoading(false);
     }
   };
 
   const fetchCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setError("Geolocation is not supported by your browser");
+      return;
+    }
+
     navigator.geolocation.getCurrentPosition(
-      position => {
-        setLatitude(position.coords.latitude);
-        setLongitude(position.coords.longitude);
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const response = await axios.get(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+          );
+
+          setFormData(prev => ({
+            ...prev,
+            latitude: latitude.toFixed(6),
+            longitude: longitude.toFixed(6),
+            location: response.data.display_name || "Unknown location"
+          }));
+        } catch (error) {
+          setError("Failed to fetch location details");
+        }
       },
-      error => setError("Failed to get current location")
+      (error) => setError("Please enable location services to continue")
     );
+  };
+
+  const handleDeleteMedia = async (mediaId) => {
+    if (!window.confirm("Are you sure you want to delete this media?")) return;
+    
+    try {
+      await axios.delete(
+        `https://ireporter-1-50ya.onrender.com/${type}s/${id}/media/${mediaId}`,
+        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+      );
+      setMedia(prev => prev.filter(m => m.id !== mediaId));
+    } catch (error) {
+      setError(error.response?.data?.error || "Failed to delete media");
+    }
   };
 
   if (loading) return <div className="loading">Loading...</div>;
   if (error) return <div className="error">{error}</div>;
+  if (!report) return null;
 
   return (
     <div className="edit-report-container">
       <div className="report-card">
         <h2>Edit {type.charAt(0).toUpperCase() + type.slice(1)} Report</h2>
         
-        <div className="card-content">
+        <form onSubmit={handleSubmit}>
           <div className="form-section">
             <label>Title</label>
             <input
               type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              value={formData.title}
+              onChange={(e) => setFormData(p => ({ ...p, title: e.target.value }))}
+              required
             />
           </div>
 
           <div className="form-section">
             <label>Description</label>
             <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              value={formData.description}
+              onChange={(e) => setFormData(p => ({ ...p, description: e.target.value }))}
+              required
             />
           </div>
 
@@ -166,18 +199,29 @@ const EditReport = () => {
                 <label>Latitude</label>
                 <input
                   type="number"
-                  value={latitude}
-                  onChange={(e) => setLatitude(e.target.value)}
+                  value={formData.latitude}
+                  onChange={(e) => setFormData(p => ({ ...p, latitude: e.target.value }))}
                   step="any"
+                  required
                 />
               </div>
               <div>
                 <label>Longitude</label>
                 <input
                   type="number"
-                  value={longitude}
-                  onChange={(e) => setLongitude(e.target.value)}
+                  value={formData.longitude}
+                  onChange={(e) => setFormData(p => ({ ...p, longitude: e.target.value }))}
                   step="any"
+                  required
+                />
+              </div>
+              <div>
+                <label>Location Name</label>
+                <input
+                  type="text"
+                  value={formData.location}
+                  onChange={(e) => setFormData(p => ({ ...p, location: e.target.value }))}
+                  required
                 />
               </div>
             </div>
@@ -188,22 +232,44 @@ const EditReport = () => {
             <div className="media-grid">
               {media.map((item) => (
                 <div key={item.id} className="media-item">
-                  {item.media_type === 'image' ? (
-                    <img src={`https://ireporter-1-50ya.onrender.com/uploads/${item.file_url}`} alt="Attachment" />
+                  {item.file_url.includes('image') ? (
+                    <>
+                      <img src={item.file_url} alt="Attachment" />
+                      <button 
+                        className="delete-media"
+                        onClick={() => handleDeleteMedia(item.id)}
+                      >
+                        ×
+                      </button>
+                    </>
                   ) : (
-                    <video controls>
-                      <source src={`https://ireporter-1-50ya.onrender.com/uploads/${item.file_url}`} />
-                    </video>
+                    <>
+                      <video controls>
+                        <source src={item.file_url} />
+                      </video>
+                      <button
+                        className="delete-media"
+                        onClick={() => handleDeleteMedia(item.id)}
+                      >
+                        ×
+                      </button>
+                    </>
                   )}
                 </div>
               ))}
             </div>
-            <input
-              type="file"
-              multiple
-              onChange={handleMediaUpload}
-              accept="image/*, video/*"
-            />
+            <div className="media-upload">
+              <input
+                type="file"
+                multiple
+                onChange={handleMediaUpload}
+                accept="image/*, video/*"
+                id="media-upload"
+              />
+              <label htmlFor="media-upload" className="upload-button">
+                Upload New Media
+              </label>
+            </div>
           </div>
 
           <div className="action-buttons">
@@ -217,13 +283,12 @@ const EditReport = () => {
             <button 
               type="submit" 
               className="save-btn"
-              onClick={handleSubmit}
               disabled={loading}
             >
               {loading ? "Saving..." : "Save Changes"}
             </button>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );

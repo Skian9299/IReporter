@@ -1,97 +1,140 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import "./Dashboard.css";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [username, setUsername] = useState("User");
-  const [profileImage, setProfileImage] = useState(localStorage.getItem("profileImage") || null);
-  const [location, setLocation] = useState(localStorage.getItem("location") || "");
-  const [latitude, setLatitude] = useState("");
-  const [longitude, setLongitude] = useState("");
-  const [reportType, setReportType] = useState("redflag"); // Default selection
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
+  const [location, setLocation] = useState("");
+  const [coordinates, setCoordinates] = useState({ lat: null, lng: null });
+  const [reportType, setReportType] = useState("redflags");
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    image: null
+  });
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [showLocation, setShowLocation] = useState(false);
 
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem("user"));
-    const token = localStorage.getItem("token");
-    if (storedUser && storedUser.first_name && storedUser.last_name && token) {
-      setUsername(`${storedUser.first_name} ${storedUser.last_name}`);
-    } else {
-      navigate("/login");
-    }
-  }, [navigate]);
-
-  const fetchLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const lat = position.coords.latitude;
-          const lon = position.coords.longitude;
-          setLatitude(lat);
-          setLongitude(lon);
-          try {
-            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
-            const data = await response.json();
-            const placeName = data.address?.city || data.address?.town || data.address?.village || "Unknown Location";
-            setLocation(placeName);
-            localStorage.setItem("location", placeName);
-          } catch (error) {
-            setLocation("Unknown Location");
-          }
-          setShowLocation(true);
-        },
-        () => setError("Unable to fetch location. Please enter it manually.")
-      );
-    } else {
-      setError("Geolocation is not supported by your browser.");
-    }
-  };
-  const submitReport = async () => {
-    if (!title || !description || !location || !latitude || !longitude) {
-      setError("Please fill in all required fields.");
-      return;
-    }
-    const payload = {
-      title,
-      description,
-      location,
-      latitude: parseFloat(latitude),
-      longitude: parseFloat(longitude),
-      image_url: imageUrl,
+    const verifyAuth = async () => {
+      const token = localStorage.getItem("token");
+      const user = JSON.parse(localStorage.getItem("user"));
+      
+      if (!token || !user) {
+        navigate("/login");
+        return;
+      }
+      
+      try {
+        const response = await axios.get("https://ireporter-1-50ya.onrender.com/auth/email", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        setUsername(`${user.first_name} ${user.last_name}`);
+      } catch (error) {
+        localStorage.clear();
+        navigate("/login");
+      }
     };
 
-    const endpoint = reportType === "redflags" ? "redflags" : "interventions";
+    verifyAuth();
+  }, [navigate]);
+
+  const handleGeolocation = () => {
+    if (!navigator.geolocation) {
+      setError("Geolocation is not supported by your browser");
+      return;
+    }
+
+    setLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const response = await axios.get(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+          );
+
+          const address = response.data.address;
+          const locationName = [
+            address.road,
+            address.city,
+            address.state,
+            address.country
+          ].filter(Boolean).join(", ");
+
+          setLocation(locationName);
+          setCoordinates({ lat: latitude, lng: longitude });
+          setError("");
+        } catch (error) {
+          setError("Failed to fetch location details");
+        } finally {
+          setLoading(false);
+        }
+      },
+      (error) => {
+        setError("Please enable location services to continue");
+        setLoading(false);
+      }
+    );
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file && file.size > 5 * 1024 * 1024) {
+      setError("File size must be less than 5MB");
+      return;
+    }
+    setFormData(prev => ({ ...prev, image: file }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    if (!formData.title || !formData.description || !coordinates.lat || !coordinates.lng) {
+      setError("Please fill all required fields");
+      setLoading(false);
+      return;
+    }
+
+    const payload = new FormData();
+    payload.append("title", formData.title);
+    payload.append("description", formData.description);
+    payload.append("location", location);
+    payload.append("latitude", coordinates.lat);
+    payload.append("longitude", coordinates.lng);
+    if (formData.image) payload.append("image", formData.image);
 
     try {
-      const response = await fetch(`https://ireporter-1-50ya.onrender.com/${endpoint}`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${localStorage.getItem("token")}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-        credentials: "include",
-      });
+      const endpoint = reportType === "redflags" ? "redflags" : "interventions";
+      const response = await axios.post(
+        `https://ireporter-1-50ya.onrender.com/${endpoint}`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "multipart/form-data"
+          }
+        }
+      );
 
-      const data = await response.json();
-      if (response.ok) {
-        alert(`${reportType === "redflag" ? "Red Flag" : "Intervention"} submitted successfully!`);
-        setTitle("");
-        setDescription("");
-        setImageUrl("");
-        setError("");
-      } else {
-        setError(data.error || "Failed to submit report.");
+      if (response.status === 201) {
+        setFormData({ title: "", description: "", image: null });
+        setCoordinates({ lat: null, lng: null });
+        setLocation("");
+        alert(`Report submitted successfully! ID: ${response.data.id}`);
       }
     } catch (error) {
-      setError("An error occurred while submitting the report.");
+      setError(error.response?.data?.error || "Submission failed. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
+
   const handleLogout = () => {
     localStorage.clear();
     navigate("/");
@@ -99,39 +142,90 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard-container">
-      {/* HEADER SECTION */}
-      <div className="dashboard-header">
+      <header className="dashboard-header">
         <div className="user-info">
-          <img src={profileImage || "default-avatar.png"} alt="Profile" className="profile-pic" />
           <span className="username">{username}</span>
-        </div>
-        <div className="dashboard-buttons">
-          <button className="add-report" onClick={() => navigate("/dashboard")}>Add Report</button>
-          <button className="all-reports" onClick={() => navigate("/reports")}>All Reports</button>
-          <button className="logout" onClick={handleLogout}>Log Out</button>
-        </div>
-      </div>
-
-      <div className="report-box">
-        <h3>Submit a Report</h3>
-        <select value={reportType} onChange={(e) => setReportType(e.target.value)}>
-          <option value="redflags">Red Flag</option>
-          <option value="intervention">Intervention</option>
-        </select>
-        <input type="text" placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
-        <textarea placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
-        <input type="text" placeholder="Image URL" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} />
-        <button onClick={fetchLocation}>📍 Fetch Location</button>
-        {showLocation && (
-          <div className="location-info">
-            <p><strong>Location:</strong> {location}</p>
-            <p><strong>Latitude:</strong> {latitude}</p>
-            <p><strong>Longitude:</strong> {longitude}</p>
+          <div className="header-actions">
+            <button onClick={() => navigate("/reports")}>View Reports</button>
+            <button onClick={handleLogout}>Logout</button>
           </div>
-        )}
-        <button className="report-btn" onClick={submitReport}>Submit Report</button>
-        {error && <p className="error-message">{error}</p>}
-      </div>
+        </div>
+      </header>
+
+      <main className="report-form-container">
+        <h2>Submit New Report</h2>
+        
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label>Report Type</label>
+            <select
+              value={reportType}
+              onChange={(e) => setReportType(e.target.value)}
+              required
+            >
+              <option value="redflags">Red Flag</option>
+              <option value="interventions">Intervention</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label>Title</label>
+            <input
+              type="text"
+              value={formData.title}
+              onChange={(e) => setFormData(p => ({ ...p, title: e.target.value }))}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Description</label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData(p => ({ ...p, description: e.target.value }))}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Attach Image (optional)</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileUpload}
+            />
+          </div>
+
+          <div className="location-section">
+            <button
+              type="button"
+              onClick={handleGeolocation}
+              disabled={loading}
+              className="location-btn"
+            >
+              {loading ? "Fetching Location..." : "📍 Auto-Detect Location"}
+            </button>
+            
+            {coordinates.lat && (
+              <div className="coordinates-display">
+                <p>Location: {location || "Unknown area"}</p>
+                <p>Latitude: {coordinates.lat?.toFixed(6)}</p>
+                <p>Longitude: {coordinates.lng?.toFixed(6)}</p>
+              </div>
+            )}
+          </div>
+
+          {error && <p className="error-message">{error}</p>}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="submit-btn"
+          >
+            {loading ? "Submitting..." : "Submit Report"}
+          </button>
+        </form>
+      </main>
     </div>
   );
 };

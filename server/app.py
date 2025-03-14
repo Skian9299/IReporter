@@ -50,6 +50,10 @@ mail = setup_mail(app)
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
 # -------------------------
 # RedFlag Routes
 # -------------------------
@@ -92,7 +96,7 @@ def handle_redflags():
         db.session.commit()
         return jsonify(redflag.to_dict()), 201
 
-@app.route('/redflags/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+@app.route('/redflags/<int:id>', methods=['GET', 'PATCH', 'DELETE'])
 @jwt_required()
 @cross_origin(origin="*", supports_credentials=True)
 def manage_redflag(id):
@@ -102,7 +106,7 @@ def manage_redflag(id):
     if request.method == 'GET':
         return jsonify(redflag.to_dict()), 200
     
-    elif request.method == 'PUT':
+    elif request.method == 'PATCH':
         if redflag.user_id != current_user_id:
             return jsonify({'error': 'Unauthorized access.'}), 403
 
@@ -128,7 +132,7 @@ def manage_redflag(id):
         # Handle status
         if 'status' in data:
             try:
-                redflag.status = Status(data['status'])
+                redflag.status = Status(data['status'].lower()) 
             except ValueError:
                 return jsonify({'error': 'Invalid status value.'}), 400
 
@@ -138,7 +142,9 @@ def manage_redflag(id):
     elif request.method == 'DELETE':
         if redflag.user_id != current_user_id:
             return jsonify({'error': 'Unauthorized access.'}), 403
-
+        if redflag.status not in [Status.DRAFT, Status.RESOLVED]:
+            return jsonify({'error': 'Cannot delete report in current status'}), 400
+        
         db.session.delete(redflag)
         db.session.commit()
         return jsonify({'message': 'Red flag deleted successfully.'}), 200
@@ -185,7 +191,7 @@ def handle_interventions():
         db.session.commit()
         return jsonify(intervention.to_dict()), 201
 
-@app.route('/interventions/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+@app.route('/interventions/<int:id>', methods=['GET', 'PATCH', 'DELETE'])
 @jwt_required()
 @cross_origin(origin="*", supports_credentials=True)
 def manage_intervention(id):
@@ -195,7 +201,7 @@ def manage_intervention(id):
     if request.method == 'GET':
         return jsonify(intervention.to_dict()), 200
     
-    elif request.method == 'PUT':
+    elif request.method == 'PATCH':
         if intervention.user_id != current_user_id:
             return jsonify({'error': 'Unauthorized access.'}), 403
 
@@ -221,20 +227,42 @@ def manage_intervention(id):
         # Handle status
         if 'status' in data:
             try:
-                intervention.status = Status(data['status'])
+                intervention.status = Status(data['status'].lower()) 
             except ValueError:
                 return jsonify({'error': 'Invalid status value.'}), 400
-
         db.session.commit()
         return jsonify(intervention.to_dict()), 200
     
     elif request.method == 'DELETE':
         if intervention.user_id != current_user_id:
             return jsonify({'error': 'Unauthorized access.'}), 403
+        if intervention.status not in [Status.DRAFT, Status.RESOLVED]:
+            return jsonify({'error': 'Cannot delete report in current status'}), 400
 
         db.session.delete(intervention)
         db.session.commit()
         return jsonify({'message': 'Intervention deleted successfully.'}), 200
+    
+# Getting all reports
+@app.route('/reports', methods=['GET'])
+@cross_origin(origin="*", supports_credentials=True)
+@jwt_required()
+def get_all_reports():
+    current_user_id = get_jwt_identity()
+    current_user = User.query.get(current_user_id)
+    
+    if current_user.role == 'admin':
+         redflags = RedFlag.query.all()
+         interventions = Intervention.query.all()
+    else:
+        redflags = RedFlag.query.filter_by(user_id=current_user_id).all()
+        interventions = Intervention.query.filter_by(user_id=current_user_id).all()
+    
+    return jsonify({
+        "redflags": [r.to_dict() for r in redflags],
+        "interventions": [i.to_dict() for i in interventions]
+    }), 200
+
 
 # -------------------------
 # Other Routes
@@ -269,18 +297,7 @@ def get_mail():
     user = User.query.filter_by(id=current_user).first()
     return jsonify({'message': 'success', 'email': user.email}), 200
 
-@app.route('/reports', methods=['GET'])
-@cross_origin(origin="*", supports_credentials=True)
-@jwt_required()
-def get_all_reports():
-    redflags = RedFlag.query.all()
-    interventions = Intervention.query.all()
-    return jsonify({
-        "redflags": [r.to_dict() for r in redflags],
-        "interventions": [i.to_dict() for i in interventions]
-    }), 200
 
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()
-    app.run(debug=True)
+        app.run(debug=True)

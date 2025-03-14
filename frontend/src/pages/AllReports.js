@@ -8,105 +8,107 @@ const AllReports = () => {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  // State for handling the report currently being edited
-  const [editingReport, setEditingReport] = useState(null);
-  // Local state for the edit form fields
-  const [editTitle, setEditTitle] = useState("");
-  const [editDescription, setEditDescription] = useState("");
-  const [editLocation, setEditLocation] = useState("");
-  const [editLatitude, setEditLatitude] = useState("");
-  const [editLongitude, setEditLongitude] = useState("");
-  const [editImageUrl, setEditImageUrl] = useState("");
-  const [editStatus, setEditStatus] = useState("");
 
-  const getStoredUser = () => {
+  const getStoredUser = useCallback(() => {
     try {
       return JSON.parse(localStorage.getItem("user"));
     } catch {
       return null;
     }
-  };
+  }, []);
 
-  // Fetch user reports with AbortController to prevent memory leaks
   const fetchUserReports = useCallback(async (token) => {
     const controller = new AbortController();
     try {
       setLoading(true);
       setError(null);
-  
+
       const response = await fetch("https://ireporter-1-50ya.onrender.com/reports", {
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
         signal: controller.signal,
       });
-  
+
       if (!response.ok) {
-        throw new Error("Failed to fetch reports");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to fetch reports");
       }
-  
+
       const data = await response.json();
-  
-      // Ensure each report has a type for proper handling
-      const formattedRedFlags = data.redflags.map((r) => ({ ...r, type: "redflag" }));
-      const formattedInterventions = data.interventions.map((i) => ({ ...i, type: "intervention" }));
-  
-      setReports([...formattedRedFlags, ...formattedInterventions]);
+      const processReports = (arr, type) => arr.map(item => ({
+        ...item,
+        type,
+        created_at: new Date(item.created_at).toLocaleString(),
+        updated_at: new Date(item.updated_at).toLocaleString()
+      }));
+
+      setReports([
+        ...processReports(data.redflags, "redflag"),
+        ...processReports(data.interventions, "intervention")
+      ]);
     } catch (error) {
       if (error.name !== "AbortError") {
-        setError(error.message || "Failed to load reports");
+        setError(error.message);
+        setTimeout(() => setError(null), 5000);
       }
     } finally {
       setLoading(false);
     }
     return () => controller.abort();
   }, []);
-  
+
   useEffect(() => {
-    const storedUser = getStoredUser();
+    const user = getStoredUser();
     const token = localStorage.getItem("token");
-  
-    if (storedUser?.id && token) {
-      setUsername(`${storedUser.first_name} ${storedUser.last_name}`);
+
+    if (user?.id && token) {
+      setUsername(`${user.first_name} ${user.last_name}`);
       fetchUserReports(token);
     } else {
       navigate("/login");
     }
-  }, [navigate, fetchUserReports]);
-  
-  // Handle edit
-  const handleEdit = (report) => {
-    navigate(`/edit-report/${report.id}?type=${report.type}`);
-  };
+  }, [navigate, fetchUserReports, getStoredUser]);
 
-  // Handle delete
   const handleDelete = async (report) => {
-    if (report.status !== "draft") {
-      alert("Only draft reports can be deleted");
-      return;
-    }
-  
+    if (!window.confirm("Are you sure you want to delete this report?")) return;
+
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`https://ireporter-1-50ya.onrender.com/${report.type}s/${report.id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-  
-      if (!response.ok) throw new Error("Failed to delete report");
-      setReports((prevReports) => prevReports.filter((r) => r.id !== report.id));
-      alert("Report deleted successfully.");
+      const response = await fetch(
+        `https://ireporter-1-50ya.onrender.com/${report.type}s/${report.id}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Deletion failed");
+      }
+
+      setReports(prev => prev.filter(r => r.id !== report.id));
     } catch (error) {
-      console.error("Error deleting report:", error);
-      alert("An error occurred while deleting the report.");
+      alert(error.message);
+      console.error("Delete error:", error);
     }
   };
-  
-  // Handle logout
+
+  const handleRefresh = () => {
+    const token = localStorage.getItem("token");
+    fetchUserReports(token);
+  };
+
   const handleLogout = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
+    localStorage.clear();
     navigate("/");
   };
+
+  const StatusBadge = ({ status }) => (
+    <span className={`status-badge ${status.toLowerCase()}`}>
+      {status.replace(/_/g, ' ')}
+    </span>
+  );
 
   return (
     <div className="reports-container">
@@ -115,15 +117,10 @@ const AllReports = () => {
           <span className="username">{username}</span>
           <div className="header-actions">
             <button onClick={() => navigate("/dashboard")}>New Report</button>
-            <button onClick={() => navigate("/reports")}>Refresh</button>
-            <button
-              onClick={() => {
-                localStorage.clear();
-                navigate("/");
-              }}
-            >
-              Logout
+            <button onClick={handleRefresh} disabled={loading}>
+              {loading ? 'Refreshing...' : 'Refresh'}
             </button>
+            <button onClick={handleLogout}>Logout</button>
           </div>
         </div>
       </header>
@@ -131,52 +128,72 @@ const AllReports = () => {
       <main className="reports-main">
         <h1>Your Reports</h1>
 
+        {error && <p className="error-message">{error}</p>}
+
         {loading ? (
-          <p>Loading reports...</p>
-        ) : error ? (
-          <p className="error-message">{error}</p>
-        ) : reports.length > 0 ? (
-          <div className="reports-list">
+          <div className="loading-indicator">Loading reports...</div>
+        ) : reports.length === 0 ? (
+          <p className="no-reports">No reports found</p>
+        ) : (
+          <div className="reports-grid">
             {reports.map((report) => (
               <div key={report.id} className="report-card">
-                <div className="report-content">
+                <div className="report-header">
                   <h3>{report.title}</h3>
-                  <p>{report.description}</p>
-                  <p>
-                    <strong>Location:</strong> {report.location}
-                  </p>
-                  <p>
-                    <strong>Latitude:</strong> {report.latitude}
-                  </p>
-                  <p>
-                    <strong>Longitude:</strong> {report.longitude}
-                  </p>
-                  <p>
-                    <strong>Status:</strong> {report.status}
-                  </p>
-                  <p>
-                    <strong>Created At:</strong> {new Date(report.created_at).toLocaleString()}
-                  </p>
-                  <p>
-                    <strong>Updated At:</strong> {new Date(report.updated_at).toLocaleString()}
-                  </p>
-                  {report.image_url && (
-                    <img
-                      src={report.image_url} // No need to prepend localhost if it's already a full URL
-                      alt="Report"
-                      className="report-image"
-                    />
-                  )}
+                  <StatusBadge status={report.status} />
                 </div>
+
+                <div className="report-body">
+                  <p className="report-description">{report.description}</p>
+                  
+                  <div className="location-info">
+                    <div>
+                      <strong>Location:</strong>
+                      <p>{report.location}</p>
+                    </div>
+                    <div className="coordinates">
+                      <span>
+                        <strong>Lat:</strong> {report.latitude}
+                      </span>
+                      <span>
+                        <strong>Lng:</strong> {report.longitude}
+                      </span>
+                    </div>
+                  </div>
+
+                  {report.image_url && (
+                    <div className="report-media">
+                      <img
+                        src={report.image_url}
+                        alt="Report visual"
+                        className="report-image"
+                      />
+                    </div>
+                  )}
+
+                  <div className="timestamps">
+                    <span>Created: {report.created_at}</span>
+                    <span>Updated: {report.updated_at}</span>
+                  </div>
+                </div>
+
                 <div className="report-actions">
-                  <button onClick={() => handleEdit(report)}>Edit</button>
-                  <button onClick={() => handleDelete(report)}>Delete</button>
+                  <button 
+                    onClick={() => navigate(`/edit-report/${report.id}?type=${report.type}`)}
+                    disabled={report.status !== 'draft'}
+                  >
+                    Edit
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(report)}
+                    disabled={!['draft', 'resolved'].includes(report.status)}
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
             ))}
           </div>
-        ) : (
-          <p>No reports found.</p>
         )}
       </main>
     </div>
