@@ -1,0 +1,415 @@
+/* Root Variables */
+:root {
+  --primary-blue: #2563eb;
+  --danger-red: #dc2626;
+  --success-green: #16a34a;
+  --neutral-100: #f8fafc;
+  --neutral-200: #e2e8f0;
+  --neutral-600: #475569;
+  --neutral-800: #1e293b;
+}
+
+.bg-orange-100 {
+  background-color: #FFEDCC;
+}
+.bg-orange-500 {
+  background-color: #FFA500;
+}
+
+/* Full Page Container */
+.dashboard-container {
+  min-height: 100vh;
+  width: 100%;
+  display: block;
+  background: var(--neutral-100);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Header */
+.dashboard-header {
+  background: #FFEDCC;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid var(--neutral-200);
+  padding: 1rem 0;
+  width: 100%;
+}
+
+.header-content {
+  width: 100%;
+  padding: 0 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Logo */
+.logo {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--primary-blue);
+}
+
+/* User Profile */
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--primary-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.user-details .welcome-text {
+  font-size: 0.875rem;
+  color: var(--neutral-600);
+}
+
+.user-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--neutral-800);
+}
+
+/* Header Actions */
+.header-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.redflag-btn {
+  background: var(--danger-red);
+  color: #fff;
+}
+
+.redflag-btn:hover {
+  background: #b91c1c;
+}
+
+.intervention-btn {
+  background: var(--success-green);
+  color: #fff;
+}
+
+.intervention-btn:hover {
+  background: #15803d;
+}
+
+/* Main Content */
+.main-content {
+  width: 100%;
+  padding: 2rem;
+}
+
+/* Dashboard Sections */
+/* Removed grid layout; sections now stack vertically */
+.dashboard-sections {
+  display: block;
+  gap: 2rem;
+}
+
+/* Dashboard Section Card */
+.dashboard-section {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+/* Section Header */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--neutral-200);
+}
+
+.section-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--neutral-800);
+}
+
+.item-count {
+  background: var(--neutral-200);
+  color: var(--neutral-600);
+  font-size: 0.875rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 20px;
+  margin-left: auto;
+}
+
+/* Items Container */
+.items-container {
+  display: block;
+}
+
+/* Card Styling */
+.item-card {
+  padding: 1.25rem;
+  border-radius: 8px;
+  background: var(--neutral-100);
+  border: 1px solid var(--neutral-200);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  margin-bottom: 1rem;
+}
+
+.item-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Red Flag Card */
+.redflag-card {
+  border-left: 4px solid var(--danger-red);
+}
+
+/* Intervention Card */
+.intervention-card {
+  border-left: 4px solid var(--success-green);
+}
+
+/* Card Content */
+.card-content {
+  display: flex;
+  gap: 1rem;
+}
+
+.card-media {
+  flex-shrink: 0;
+  width: 80px;
+  height: 80px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.int-green {
+  color: #16a34a;
+}
+.card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--neutral-800);
+  margin-right: 1rem;
+}
+
+.card-description {
+  font-size: 0.875rem;
+  color: var(--neutral-600);
+  line-height: 1.5;
+}
+
+/* Delete Button */
+.delete-btn {
+  background: transparent;
+  border: none;
+  color: var(--neutral-600);
+  padding: 0.25rem;
+  transition: color 0.2s ease;
+  cursor: pointer;
+}
+
+.delete-btn:hover {
+  color: var(--danger-red);
+}
+
+.edit-btn {
+  background: transparent;
+  border: none;
+  color: var(--primary-blue);
+  padding: 0.25rem;
+  transition: color 0.2s ease;
+  cursor: pointer;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+
+.edit-btn:hover {
+  color: var(--neutral-800);
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 2rem 1rem;
+  background: var(--neutral-100);
+  border-radius: 8px;
+  border: 2px dashed var(--neutral-200);
+}
+
+.empty-text {
+  color: var(--neutral-600);
+  margin-bottom: 1rem;
+}
+
+.empty-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--primary-blue);
+  font-weight: 500;
+  transition: color 0.2s ease;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.empty-action:hover {
+  color: #1d4ed8;
+}
+
+/* Modal Overlay & Content */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  width: 90%;
+  max-width: 500px;
+  padding: 2rem;
+  background: #fff;
+  border-radius: 12px;
+  position: relative;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.close-button {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--neutral-600);
+}
+
+.modal-title-redflag {
+  color: var(--danger-red);
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.modal-title-intervention {
+  color: var(--success-green);
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+/* Form Elements */
+.form-group {
+  margin-bottom: 1.25rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--neutral-800);
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--neutral-200);
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-cancel {
+  background: var(--neutral-200);
+  color: var(--neutral-800);
+}
+
+.btn-submit-redflag {
+  background: var(--danger-red);
+  color: #fff;
+}
+
+.btn-submit-redflag:hover {
+  background: #b91c1c;
+}
+
+.btn-submit-intervention {
+  background: var(--success-green);
+  color: #fff;
+}
+
+.btn-submit-intervention:hover {
+  background: #15803d;
+}
